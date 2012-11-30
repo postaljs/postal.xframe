@@ -1,11 +1,10 @@
 var xframe = (function(window, _, postal) {
-
   var XFRAME = "xframe";
-  var _active = true;
   var _defaults = {
-    autoReciprocate: true,
-    allowedOrigins: [ window.location.origin ],
-    originUrl: window.location.origin
+    autoReciprocate : true,
+    allowedOrigins  : [ window.location.origin ],
+    enabled         : true,
+    originUrl       : window.location.origin
   };
   var _config = _defaults;
 
@@ -36,14 +35,6 @@ var xframe = (function(window, _, postal) {
       return clientOptions;
     },
 
-    disable: function() {
-      _active = false;
-    },
-
-    enable: function() {
-      _active = true;
-    },
-
     getTargets: function() {
       return _.map(document.getElementsByTagName('iframe'), function(i) { return i.contentWindow; })
     },
@@ -62,7 +53,7 @@ var xframe = (function(window, _, postal) {
 
     shouldProcess: function(event) {
       var hasDomainFilters = !!_config.allowedOrigins.length;
-      return _active && (hasDomainFilters && _.contains(_config.allowedOrigins, event.origin) || !hasDomainFilters ) && (event.data.postal)
+      return _config.enabled && (hasDomainFilters && _.contains(_config.allowedOrigins, event.origin) || !hasDomainFilters ) && (event.data.postal)
     },
 
     signalReady: function(manifest) {

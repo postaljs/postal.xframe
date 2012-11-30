@@ -19,12 +19,14 @@
   }
 }( this, function ( _, postal, global, undefined ) {
 
-  var _enabled = true;
-  var _blacklisting = true;
+  var _defaults = {
+    enabled          : true,
+    constraintMode   : 'blacklist',
+    bridgeSysChannel : true
+  };
+  var _config = _defaults;
   
   postal.fedx = _.extend({
-  
-    _lastOrigin: [],
   
     clients: {},
   
@@ -53,8 +55,18 @@
       }
     },
   
-    blacklistMode: function() {
-      _blacklisting = true;
+    addConstraint: function(channel, topic) {
+      if(!this.constraints[channel]) {
+        this.constraints[channel] = [ topic ];
+      } else if(!(_.include(this.constraints[channel], topic))) {
+        this.constraints[channel].push(topic);
+      }
+    },
+  
+    removeConstraint: function(channel, topic) {
+      if(this.constraints[channel] && _.include(this.constraints[channel], topic)) {
+        this.constraints[channel] = _.without(this.constraints[channel], topic);
+      }
     },
   
     canSendRemote: function(channel, topic) {
@@ -62,21 +74,24 @@
       var topicMatch = (channelPresent && _.any(this.constraints[channel], function(binding){
         return postal.configuration.resolver.compare(binding, topic);
       }));
+      var blacklisting = _config.constraintMode === 'blacklist';
+      var sysChannelOK = ((!_config.bridgeSysChannel && channel !== postal.configuration.SYSTEM_CHANNEL) || _config.bridgeSysChannel);
   
-      return _enabled &&
-        channel !== postal.configuration.SYSTEM_CHANNEL &&
+      return _config.enabled && sysChannelOK &&
         (
-          (_blacklisting && (!channelPresent || (channelPresent && !topicMatch))) ||
-            (!_blacklisting && channelPresent && topicMatch)
+          (blacklisting && (!channelPresent || (channelPresent && !topicMatch))) ||
+            (!blacklisting && channelPresent && topicMatch)
           );
     },
   
-    disable: function() {
-      _enabled = false;
-    },
-  
-    enable: function() {
-      _enabled = true;
+    configure: function(cfg) {
+      if(cfg.constraintMode && cfg.constraintMode !== 'blacklist' && cfg.mode !== 'whitelist') {
+        throw new Error("postal.fedx constraintMode must be 'blacklist' or 'whitelist'.");
+      }
+      if(cfg){
+        _config = _.defaults(cfg, _defaults);
+      }
+      return _config;
     },
   
     getFedxWrapper: function(type) {
@@ -87,15 +102,14 @@
       }
     },
   
-    onFederatedMsg: function(payload, originId) {
-      this._lastOrigin = [originId];
+    onFederatedMsg: function(payload, senderId) {
+      payload.envelope.lastSender = senderId;
       postal.publish(payload.envelope);
-      this._lastOrigin = [];
     },
   
     send : function(payload) {
       _.each(this.clients, function(client, id) {
-        if(!_.include(this._lastOrigin, id)) {
+        if(id !== payload.envelope.lastSender) {
           client.send(payload);
         }
       }, this);
@@ -109,18 +123,15 @@
           transport.signalReady();
         }, this);
       }
-    },
-  
-    whitelistMode: function() {
-      _blacklisting = false;
     }
   
   }, postal.fedx);
   
   postal.addWireTap(function(data, envelope){
     if(postal.fedx.canSendRemote(envelope.channel, envelope.topic)) {
-      envelope.originId = envelope.originId || postal.instanceId;
-      postal.fedx.send(_.extend({ envelope: envelope }, postal.fedx.getFedxWrapper('message')));
+      var env = _.clone(envelope);
+      env.originId = env.originId || postal.instanceId;
+      postal.fedx.send(_.defaults({ envelope: env }, postal.fedx.getFedxWrapper('message')));
     }
   });
 
