@@ -36,7 +36,11 @@ var xframe = (function(window, _, postal) {
     },
 
     getTargets: function() {
-      return _.map(document.getElementsByTagName('iframe'), function(i) { return i.contentWindow; })
+      var targets = _.map(document.getElementsByTagName('iframe'), function(i) { return i.contentWindow; });
+      if(window.parent && window.parent !== window) {
+        targets.push(window.parent);
+      }
+      return targets;
     },
 
     onPostMessage: function( event ) {
@@ -57,12 +61,7 @@ var xframe = (function(window, _, postal) {
     },
 
     signalReady: function(manifest) {
-      var self = this;
-      var targets = self.getTargets();
-      if(window.parent && window.parent !== window) {
-        targets.push(window.parent);
-      }
-      _.each(targets, function(target) {
+      _.each(this.getTargets(), function(target) {
         target.postMessage(postal.fedx.getFedxWrapper("ready"),  _config.originUrl || "*");
       });
     }

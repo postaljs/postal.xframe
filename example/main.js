@@ -23,8 +23,4 @@ $(function() {
     });
   });
 
-  $("#sig").on('click', function(){
-    postal.fedx.signalReady();
-  });
-
 });
