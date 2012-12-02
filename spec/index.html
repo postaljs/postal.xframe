@@ -1,0 +1,24 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <link rel="stylesheet" href="/ext/mocha.css" />
+    <title>postal.xframe specs</title>
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="/ext/jquery-1.8.2.js"></script>
+    <script src="/ext/underscore.js"></script>
+    <script src="/ext/expect.js"></script>
+    <script src="/ext/mocha.js"></script>
+    <script type="text/javascript">
+        mocha.setup({ ui: 'bdd', timeout: 60000, ignoreLeaks: true });
+    </script>
+    <script type="text/javascript" src="../ext/postal.js"></script>
+    <script type="text/javascript" src="../ext/postal.federation.js"></script>
+    <script type="text/javascript" src="../lib/postal.xframe.js"></script>
+    <script type="text/javascript" src="xframe.units.spec.js"></script>
+    <script type="text/javascript">
+        mocha.run();
+    </script>
+</body>
+</html>
