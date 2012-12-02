@@ -23,13 +23,13 @@ var xframe = (function(window, _, postal) {
       var clientOptions = {
         id       : payload.instanceId,
         type     : XFRAME,
-        send     : function(payload) {
-          event.source.postMessage(payload, _config.originUrl || "*");
+        send     : function(env) {
+          event.source.postMessage(_.defaults({ envelope: env }, self.getXframeWrapper('message')), _config.originUrl || "*");
         }
       };
       if(_config.autoReciprocate){
         clientOptions.postSetup = function() {
-          postal.fedx.clients[payload.instanceId].send(postal.fedx.getFedxWrapper("ready"), XFRAME);
+          event.source.postMessage(self.getXframeWrapper("ready"), _config.originUrl || "*");
         }
       }
       return clientOptions;
@@ -43,6 +43,14 @@ var xframe = (function(window, _, postal) {
       return targets;
     },
 
+    getXframeWrapper: function(type) {
+      return {
+        postal     : true,
+        type       : type,
+        instanceId : postal.instanceId
+      }
+    },
+
     onPostMessage: function( event ) {
       console.log(event.data);
       if(this.shouldProcess(event)) {
@@ -50,7 +58,7 @@ var xframe = (function(window, _, postal) {
         if(payload.type === 'ready') {
           postal.fedx.addClient(this.clientOptionsFromEvent(event));
         } else {
-          postal.fedx.onFederatedMsg( payload, payload.instanceId );
+          postal.fedx.onFederatedMsg( payload.envelope, payload.instanceId );
         }
       }
     },
@@ -62,8 +70,8 @@ var xframe = (function(window, _, postal) {
 
     signalReady: function(manifest) {
       _.each(this.getTargets(), function(target) {
-        target.postMessage(postal.fedx.getFedxWrapper("ready"),  _config.originUrl || "*");
-      });
+        target.postMessage(this.getXframeWrapper("ready"),  _config.originUrl || "*");
+      }, this);
     }
   };
 
