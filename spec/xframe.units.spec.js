@@ -1,7 +1,7 @@
 describe("postal.xframe - unit tests", function () {
   var getFakeEvent = function(postMsg) {
     return {
-      data : postal.fedx.transports.xframe.getXframeWrapper("ready"),
+      data : postal.fedx.transports.xframe.getWrapper("ready"),
       source : {
         postMessage : postMsg
       },
@@ -61,51 +61,18 @@ describe("postal.xframe - unit tests", function () {
     });
   });
 
-  describe("When calling clientOptionsFromEvent", function () {
-    var instanceId, _msg, _domain, result;
-    var cfg = postal.fedx.transports.xframe.config();
-    var postMsg = function (msg, domain) {
-      _msg = msg;
-      _domain = domain;
-    };
+  describe("When calling getWrapper", function () {
+    var _instanceId;
     beforeEach(function(){
-      instanceId = postal.instanceId;
-      postal.instanceId = "testing123";
-      result = postal.fedx.transports.xframe.clientOptionsFromEvent(getFakeEvent(postMsg));
+      _instanceId = postal.instanceId;
+      postal.instanceId = "test123";
     });
     afterEach(function(){
-      postal.instanceId = instanceId;
+      postal.instanceId = _instanceId;
     });
-    it('should produce the correct options object', function() {
-      expect(result.id).to.be(postal.instanceId);
-      expect(result.type).to.be('xframe');
-      expect(result).to.have.property("send");
-      expect(result).to.have.property("postSetup");
-    });
-    it('should send the correct reciprocate msg', function(){
-      result.postSetup();
-      expect(_msg).to.eql(postal.fedx.transports.xframe.getXframeWrapper("ready"));
-      expect(_domain).to.eql(cfg.originUrl);
-    });
-    it('should send the correct payload when sending a message', function(){
-      result.send({
-        channel: "SomeChannel",
-        topic: "Topicy.topic",
-        data: "Oh, Hai!"
-      });
-      expect(_msg).to.eql(_.defaults({ envelope: {
-        channel: "SomeChannel",
-        topic: "Topicy.topic",
-        data: "Oh, Hai!"
-      }}, postal.fedx.transports.xframe.getXframeWrapper("message")));
-      expect(_domain).to.eql(cfg.originUrl);
-    });
-  });
-
-  describe("When calling getXframeWrapper", function () {
     describe("With ready event type", function() {
       it('should produce the correct ready event wrapper', function(){
-        expect(postal.fedx.transports.xframe.getXframeWrapper('ready')).to.eql({
+        expect(postal.fedx.transports.xframe.getWrapper('ready')).to.eql({
           postal     : true,
           type       : 'ready',
           instanceId : postal.instanceId
@@ -114,11 +81,108 @@ describe("postal.xframe - unit tests", function () {
     });
     describe("With message event type", function() {
       it('should produce the correct message event wrapper', function(){
-        expect(postal.fedx.transports.xframe.getXframeWrapper('message')).to.eql({
+        expect(postal.fedx.transports.xframe.getWrapper('message', { channel: "test", topic: "test.ing", data: "hai!" })).to.eql({
           postal     : true,
           type       : 'message',
+          instanceId : postal.instanceId,
+          envelope   : { channel: "test", topic: "test.ing", data: "hai!" }
+        });
+      });
+    });
+  });
+
+  describe("When calling onPostMessage", function(){
+    var _addClient, _transportClient, _type, _msg, _origin, _instanceId, _fakeClient = {};
+    var fakeAddClient = function(transportClient, type) {
+      _transportClient = transportClient;
+      _type = type;
+      transportClient.attachToClient(_fakeClient);
+    };
+    beforeEach(function(){
+      _instanceId = postal.instanceId;
+      postal.instanceId = "test123";
+      _addClient = postal.fedx.addClient;
+      postal.fedx.addClient = fakeAddClient;
+    });
+    afterEach(function(){
+      postal.instanceId = _instanceId;
+      postal.fedx.addClient = _addClient;
+      _transportClient = undefined;
+      _type = undefined;
+    });
+    describe("With a ready event", function(){
+      beforeEach(function(){
+        postal.fedx.transports.xframe.onPostMessage(
+          getFakeEvent(function(msg, origin) {
+            _msg = msg;
+            _origin = origin;
+          })
+        );
+      });
+      it('should call postal.fedx.addClient with correct arguments', function(){
+        expect(_transportClient).to.have.property("source");
+        expect(_transportClient).to.have.property("instanceId");
+        expect(_transportClient).to.have.property("autoReciprocate");
+        expect(_transportClient).to.have.property("send");
+        expect(_transportClient).to.have.property("reciprocate");
+        expect(_transportClient).to.have.property("attachToClient");
+        expect(_transportClient.instanceId).to.be(postal.instanceId);
+        expect(_transportClient.autoReciprocate).to.be(true);
+        expect(_type).to.be("xframe");
+      });
+      it('should call attachToClient', function(){
+        expect(_fakeClient).to.have.property("xframe");
+        expect(_fakeClient.xframe).to.have.property("source");
+        expect(_fakeClient.xframe).to.have.property("instanceId");
+        expect(_fakeClient.xframe).to.have.property("autoReciprocate");
+        expect(_fakeClient.xframe).to.have.property("send");
+        expect(_fakeClient.xframe).to.have.property("reciprocate");
+        expect(_fakeClient.xframe).to.have.property("attachToClient");
+        expect(_fakeClient.xframe.instanceId).to.be(postal.instanceId);
+        expect(_fakeClient.xframe.autoReciprocate).to.be(true);
+      });
+      it('should call postMessage due to auto-reciprocation', function(){
+        expect(_msg).to.eql({
+          postal     : true,
+          type       : 'ready',
           instanceId : postal.instanceId
         });
+        expect(_origin).to.be(window.location.origin);
+      });
+    });
+    describe("With a message event", function(){
+      var _envelope, _senderId, _onMsg;
+      var _fakeOnMsg = function(envelope, senderId) {
+        _envelope = envelope;
+        _senderId = senderId;
+      };
+      beforeEach(function(){
+        _onMsg = postal.fedx.onFederatedMsg;
+        postal.fedx.onFederatedMsg = _fakeOnMsg;
+        postal.fedx.transports.xframe.onPostMessage({
+          origin     : window.location.origin,
+          data: {
+            postal     : true,
+            type       : 'message',
+            instanceId : postal.instanceId,
+            envelope   : {
+              channel : "something",
+              topic   : "interest.ing",
+              data    : "Oh, hai Batman!"
+            }
+          }
+        });
+      });
+      afterEach(function(){
+        postal.fedx.onFederatedMsg = _onMsg;
+      });
+      it('should invoke postal.fedx.onFederatedMsg with correct arguments', function(){
+        expect(_envelope).to.eql({
+          channel : "something",
+          topic   : "interest.ing",
+          data    : "Oh, hai Batman!"
+        });
+        expect(_senderId).to.be(postal.instanceId);
       });
     });
   });

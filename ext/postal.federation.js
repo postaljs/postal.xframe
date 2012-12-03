@@ -26,6 +26,18 @@
   };
   var _config = _defaults;
   
+  var FederationClient = function(id) {
+    this.id = id;
+    this.activeTransport = undefined;
+  };
+  
+  FederationClient.prototype.send = function(envelope, transport) {
+    transport = transport || this.activeTransport;
+    if(transport) {
+      this[transport].send(envelope);
+    }
+  };
+  
   postal.fedx = _.extend({
   
     clients: {},
@@ -34,25 +46,12 @@
   
     constraints: {},
   
-    addClient: function(options) {
-      var client = this.clients[options.id];
-      if(!client) {
-        client = this.clients[options.id] = {
-          activeTransport: options.type
-        };
-        client.send = function(payload, transport) {
-          transport = transport || client.activeTransport;
-          client[transport].send(payload);
-        };
-      }
-      if(!client[options.type]) {
-        client[options.type] = {
-          send: options.send
-        };
-        if(options.postSetup) {
-          options.postSetup();
-        }
-      }
+    FederationClient: FederationClient,
+  
+    addClient: function(transportClient, type) {
+      var _client = this.clients[transportClient.instanceId] || (this.clients[transportClient.instanceId] = new FederationClient(transportClient.instanceId));
+      transportClient.attachToClient(_client);
+      _client.activeTransport = _client.activeTransport || type;
     },
   
     addConstraint: function(channel, topic) {
@@ -94,23 +93,22 @@
       return _config;
     },
   
-    getFedxWrapper: function(type) {
-      return {
-        postal     : true,
-        type       : type,
-        instanceId : postal.instanceId
-      }
+    onFederatedMsg: function(envelope, senderId) {
+      envelope.lastSender = senderId;
+      postal.publish(envelope);
     },
   
-    onFederatedMsg: function(payload, senderId) {
-      payload.envelope.lastSender = senderId;
-      postal.publish(payload.envelope);
-    },
-  
-    send : function(payload) {
+    send : function(envelope) {
+      envelope.originId = envelope.originId || postal.instanceId;
       _.each(this.clients, function(client, id) {
-        if(id !== payload.envelope.lastSender) {
-          client.send(payload);
+        var env = _.clone(envelope);
+        if(id !== env.lastSender &&
+            ( !env.knownIds ||
+              !env.knownIds.length ||
+              (env.knownIds && !_.include(env.knownIds, id)))
+          ) {
+          env.knownIds = (env.knownIds || []).concat(_.without(_.keys(this.clients), id));
+          client.send(env);
         }
       }, this);
     },
@@ -129,9 +127,7 @@
   
   postal.addWireTap(function(data, envelope){
     if(postal.fedx.canSendRemote(envelope.channel, envelope.topic)) {
-      var env = _.clone(envelope);
-      env.originId = env.originId || postal.instanceId;
-      postal.fedx.send(_.defaults({ envelope: env }, postal.fedx.getFedxWrapper('message')));
+      postal.fedx.send(envelope);
     }
   });
 
