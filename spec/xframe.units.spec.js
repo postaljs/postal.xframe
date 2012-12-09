@@ -112,7 +112,7 @@ describe("postal.xframe - unit tests", function () {
     });
     describe("With a ready event", function(){
       beforeEach(function(){
-        postal.fedx.transports.xframe.onPostMessage(
+        postal.fedx.transports.xframe.onMessage(
           getFakeEvent(function(msg, origin) {
             _msg = msg;
             _origin = origin;
@@ -159,7 +159,7 @@ describe("postal.xframe - unit tests", function () {
       beforeEach(function(){
         _onMsg = postal.fedx.onFederatedMsg;
         postal.fedx.onFederatedMsg = _fakeOnMsg;
-        postal.fedx.transports.xframe.onPostMessage({
+        postal.fedx.transports.xframe.onMessage({
           origin     : window.location.origin,
           data: {
             postal     : true,
