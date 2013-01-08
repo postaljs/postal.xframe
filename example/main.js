@@ -1,6 +1,6 @@
 /*global postal*/
 
-postal.instanceId = "parent";
+postal.instanceId("parent");
 
 postal.fedx.addFilter([
   { channel: 'postal',  topic: '#', direction: 'out' },
@@ -8,7 +8,7 @@ postal.fedx.addFilter([
   { channel: 'parentz', topic: '#', direction: 'in'  }
 ]);
 postal.addWireTap(function(d, e) {
-  console.log("ID: " + postal.instanceId + " " + JSON.stringify(e, null, 4));
+  console.log("ID: " + postal.instanceId() + " " + JSON.stringify(e, null, 4));
 });
 
 $(function() {
