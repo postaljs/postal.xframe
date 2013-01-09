@@ -1,11 +1,11 @@
 {
     "name" : "postal.xframe",
     "description" : "postal.js/postal.federation plugin for federating instances of postal.js across iframe/window boundaries.",
-    "version" : "0.1.0",
-    "homepage" : "http://github.com/ifandelse/postal.xframe",
+    "version" : "0.2.0",
+    "homepage" : "http://github.com/postaljs/postal.xframe",
     "repository" : {
         "type" : "git",
-        "url" : "git://github.com/ifandelse/postal.xframe.git"
+        "url" : "git://github.com/postaljs/postal.xframe.git"
     },
 	"author" : "Jim Cowart (http://freshbrewedcode.com/jimcowart)",
     "contributors": [
@@ -20,7 +20,7 @@
 	],
     "bugs" : {
         "email" : "jim@ifandelse.com",
-        "url" : "http://github.com/ifandelse/postal.xframe/issues"
+        "url" : "http://github.com/postaljs/postal.xframe/issues"
    },
 	"directories" : { "lib" : "lib" },
     "main" : "lib/postal.xframe.js",
@@ -30,7 +30,7 @@
 	"dependencies" : {
 		"underscore"        : ">=1.1.7",
 		"postal"            : ">=0.7.3",
-		"postal.federation" : ">=0.1.0"
+		"postal.federation" : ">=0.2.0"
 	},
 	"bundleDependencies" : [ "underscore" ],
 	"devDependencies" : {},
