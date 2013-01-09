@@ -29,7 +29,6 @@
 	},
 	"dependencies" : {
 		"underscore"        : ">=1.1.7",
-		"postal"            : ">=0.7.3",
 		"postal.federation" : ">=0.2.0"
 	},
 	"bundleDependencies" : [ "underscore" ],
