@@ -86,4 +86,4 @@ var subscription = postal.subscribe({
 ```
 
 ## Caveats
-This plugin is still largely in flux. (It's been rewritten several times.) While we don't anticipate any major API changes, just know it's possible. That being said, we've used this plugin in real-world scenarios with great success, so there's that.
+This plugin is still largely in flux. (It's been rewritten several times up to now.) While we don't anticipate any major API changes, just know it's possible. That being said, we've used this plugin in real-world scenarios with great success, so there's that.
