@@ -17,7 +17,7 @@ First, include [postal](), [postal.federation]() and postal.xframe in each windo
 // there is no way to differentiate between this instance of postal
 // and a remote instance.  You can provide your own server-generated
 // GUID, or - if you know a unique value ahead of time - you can set
-// it via postal.instanceId.  Calling postal.instanceId() without any
+// it via postal.instanceId(id).  Calling postal.instanceId() without any
 // arguments acts as a getter - it returns the current instance Id.
 postal.instanceId("parent");
 
@@ -27,8 +27,8 @@ postal.instanceId("parent");
 // from those origins.  If another host attempts to federate with you from
 // an origin not listed in that array, the local instance of postal will
 // not allow it. The local instance of postal will not send any messages to
-// (nor process any from) an origin not listed in this array.)
-// `defaultOriginUrl` is the default value that will provided as the "targetUrl"
+// (nor process any from) an origin not listed in this array.
+// `defaultOriginUrl` is the default value that will be provided as the "targetUrl"
 // when postal.xframe calls `window.postMessage(msg, targetUrl)` if it hasn't
 // been specified for that remote window already.
 postal.fedx.transports.xframe.configure({
@@ -41,11 +41,12 @@ postal.fedx.transports.xframe.configure({
 // via either a whitelist or blacklist mode.  If you are in whitelist mode (the default),
 // any filters are used to determine the messages that will be processed, whereas blacklist
 // mode causes filters to block messages matching the filter, while letting anything
-// else continue in or out.  Filters are the object literals in the array below, specifying
-// a channel name, a topic binding (it can be a wildcard), and a direction. The direction
-// can be in, out or both. This particular setup will allow ANY message on the "channelA"
-// channel to be sent out to any remote postal that has federated with this instance, and
-// it will process any messages on the "channelB" channel that come from remote instances.
+// else continue in or out.  Filters look like the object literals in the array argument
+// below, specifying a channel name, a topic binding (it can be a wildcard), and a
+// direction. The direction can be "in", "out" or "both".
+// The call below will allow ANY message on the "channelA" channel to be sent out to any
+// remote postal that has federated with this instance, and it will process any messages
+// on the "channelB" channel that come from remote instances.
 postal.fedx.addFilter([
   { channel: 'channelA', topic: '#', direction: 'out' },
   { channel: 'channelB', topic: '#', direction: 'in'  }
@@ -60,6 +61,28 @@ postal.fedx.addFilter([
 // two instances will complete the 'handshake' and start sharing whatever they are allowed
 // to share
 postal.fedx.signalReady();
+
+// This message will be published locally as well as sent across to the remote postal
+ instances of any federated iframes
+postal.publish({
+	channel : "channelA",
+	topic   : "message.topic",
+	data    : {
+	   bacon : 'sizzle'
+	}
+});
+
+// If any local OR remote instances of publish a message on this channel and topic,
+// the subscription callback will be invoked.  This is the beauty of writing your code
+// to simply respond to the event - it doesn't matter where it originated.
+var subscription = postal.subscribe({
+	channel  : "channelB",
+	topic    : "some.topic",
+	callback : function(data, envelope) {
+		// do stuff with data or envelope
+	}
+});
+
 ```
 
 ## Caveats
