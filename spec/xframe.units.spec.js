@@ -1,299 +1,411 @@
-describe("postal.xframe - unit tests", function () {
-  var getFakeEvent = function(postMsg) {
-    return {
-      data : postal.fedx.transports.xframe.getWrapper("ready"),
-      source : {
-        postMessage : postMsg
-      },
-      origin: window.location.origin
-    }
-  };
-  describe("When checking configuration", function () {
-    describe("When using defaults", function () {
-      it("should return expected default values", function () {
-        expect(postal.fedx.transports.xframe.config()).to.eql({
-          autoReciprocate : true,
-          allowedOrigins : [ window.location.origin ],
-          enabled : true,
-          originUrl : window.location.origin
-        });
-      });
-    });
-    describe("When setting specific configuration values", function () {
-      beforeEach(function () {
-        postal.fedx.transports.xframe.config({
-          autoReciprocate : false,
-          enabled : false
-        });
-      });
-      afterEach(function () {
-        postal.fedx.transports.xframe.config({});
-      });
-      it("should return expected values", function () {
-        expect(postal.fedx.transports.xframe.config()).to.eql({
-          autoReciprocate : false,
-          allowedOrigins : [ window.location.origin ],
-          enabled : false,
-          originUrl : window.location.origin
-        });
-      });
-    });
-    describe("When setting entire configuration", function () {
-      beforeEach(function () {
-        postal.fedx.transports.xframe.config({
-          autoReciprocate : false,
-          allowedOrigins : [ "who.com" ],
-          enabled : false,
-          originUrl : "donna.noble.uk"
-        });
-      });
-      afterEach(function () {
-        postal.fedx.transports.xframe.config({});
-      });
-      it("should return expected values", function () {
-        expect(postal.fedx.transports.xframe.config()).to.eql({
-          autoReciprocate : false,
-          allowedOrigins : [ "who.com" ],
-          enabled : false,
-          originUrl : "donna.noble.uk"
-        });
-      });
-    });
-  });
+describe( "postal.xframe - unit tests", function () {
+	var XFrameClient = postal.fedx.transports.xframe.XFrameClient;
+	var getFakeEvent = function ( postMsg ) {
+		return {
+			data : postal.fedx.transports.xframe.getWrapper( "ready" ),
+			source : {
+				postMessage : postMsg
+			},
+			origin: window.location.origin
+		}
+	};
+	var fakeTarget = {
+		postMessage: function(msg, targetUrl) {
+			this.msg = msg;
+			this.targetUrl = targetUrl;
+		}
+	};
+	var testFederationMessage = '{"postal":true,"packingSlip":{"type":"federation.message","timeStamp":"2013-01-12T16:15:23.853Z","envelope":{"channel":"federate","topic":"all.the.things","data":"Booyah!"}}}';
+	var fakeEvent = {
+		origin : "http://fake.origin",
+		source : fakeTarget,
+		data   : testFederationMessage
+	};
+	describe( "When checking configuration", function () {
+		describe( "When using defaults", function () {
+			it( "should return expected default values", function () {
+				expect( postal.fedx.transports.xframe.configure() ).to.eql( {
+					allowedOrigins : [ window.location.origin ],
+					enabled : true,
+					defaultOriginUrl : "*"
+				} );
+			} );
+		} );
+		describe( "When setting specific configuration values", function () {
+			beforeEach( function () {
+				postal.fedx.transports.xframe.configure( {
+					enabled : false
+				} );
+			} );
+			afterEach( function () {
+				postal.fedx.transports.xframe.configure( {} );
+			} );
+			it( "should return expected values", function () {
+				expect( postal.fedx.transports.xframe.configure() ).to.eql( {
+					allowedOrigins : [ window.location.origin ],
+					enabled : false,
+					defaultOriginUrl : "*"
+				} );
+			} );
+		} );
+		describe( "When setting entire configuration", function () {
+			beforeEach( function () {
+				postal.fedx.transports.xframe.configure( {
+					allowedOrigins : [ "who.com" ],
+					enabled : false,
+					defaultOriginUrl : "donna.noble.uk"
+				} );
+			} );
+			afterEach( function () {
+				postal.fedx.transports.xframe.configure( {} );
+			} );
+			it( "should return expected values", function () {
+				expect( postal.fedx.transports.xframe.configure() ).to.eql( {
+					allowedOrigins : [ "who.com" ],
+					enabled : false,
+					defaultOriginUrl : "donna.noble.uk"
+				} );
+			} );
+		} );
+	} );
 
-  describe("When calling getWrapper", function () {
-    var _instanceId;
-    beforeEach(function(){
-      _instanceId = postal.instanceId;
-      postal.instanceId = "test123";
-    });
-    afterEach(function(){
-      postal.instanceId = _instanceId;
-    });
-    describe("With ready event type", function() {
-      it('should produce the correct ready event wrapper', function(){
-        expect(postal.fedx.transports.xframe.getWrapper('ready')).to.eql({
-          postal     : true,
-          type       : 'ready',
-          instanceId : postal.instanceId
-        });
-      });
-    });
-    describe("With message event type", function() {
-      it('should produce the correct message event wrapper', function(){
-        expect(postal.fedx.transports.xframe.getWrapper('message', { channel: "test", topic: "test.ing", data: "hai!" })).to.eql({
-          postal     : true,
-          type       : 'message',
-          instanceId : postal.instanceId,
-          envelope   : { channel: "test", topic: "test.ing", data: "hai!" }
-        });
-      });
-    });
-  });
+	describe( "When calling shouldProcess on an XFrameClient instance", function(){
+		var client;
+		beforeEach(function(){
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+		});
+		it( "should return true if target is in allowed origins", function() {
+			postal.fedx.transports.xframe.configure({
+				allowedOrigins : [ "http://fake.origin" ]
+			});
+			expect( client.shouldProcess() ).to.be( true );
+		});
+		it( "should return false if target is *not* in allowed origins", function() {
+			expect( client.shouldProcess() ).to.be( false );
+		});
+		it( "should return false if xframe has been disabled", function() {
+			postal.fedx.transports.xframe.configure({
+				allowedOrigins : [ "http://fake.origin" ],
+				enabled : false
+			});
+			expect( client.shouldProcess() ).to.be( false );
+		});
+		it( "should return true if the client's origin is '*'", function() {
+			client.options.origin = "*";
+			expect( client.shouldProcess() ).to.be( true );
+		});
+		it( "should return true if the allowed origins array is empty", function() {
+			postal.fedx.transports.xframe.configure({
+				allowedOrigins : []
+			});
+			expect( client.shouldProcess() ).to.be( true );
+		});
+		it( "should return false if the client origin is undefined", function() {
+			delete client.options.origin;
+			expect( client.shouldProcess() ).to.be( false );
+		});
+	});
 
-  describe("When calling onPostMessage", function(){
-    var _addClient, _transportClient, _type, _msg, _origin, _instanceId, _fakeClient = {};
-    var fakeAddClient = function(transportClient, type) {
-      _transportClient = transportClient;
-      _type = type;
-      transportClient.attachToClient(_fakeClient);
-    };
-    beforeEach(function(){
-      _instanceId = postal.instanceId;
-      postal.instanceId = "test123";
-      _addClient = postal.fedx.addClient;
-      postal.fedx.addClient = fakeAddClient;
-    });
-    afterEach(function(){
-      postal.instanceId = _instanceId;
-      postal.fedx.addClient = _addClient;
-      _transportClient = undefined;
-      _type = undefined;
-    });
-    describe("With a ready event", function(){
-      beforeEach(function(){
-        postal.fedx.transports.xframe.onMessage(
-          getFakeEvent(function(msg, origin) {
-            _msg = msg;
-            _origin = origin;
-          })
-        );
-      });
-      it('should call postal.fedx.addClient with correct arguments', function(){
-        expect(_transportClient).to.have.property("source");
-        expect(_transportClient).to.have.property("instanceId");
-        expect(_transportClient).to.have.property("autoReciprocate");
-        expect(_transportClient).to.have.property("send");
-        expect(_transportClient).to.have.property("reciprocate");
-        expect(_transportClient).to.have.property("attachToClient");
-        expect(_transportClient.instanceId).to.be(postal.instanceId);
-        expect(_transportClient.autoReciprocate).to.be(true);
-        expect(_type).to.be("xframe");
-      });
-      it('should call attachToClient', function(){
-        expect(_fakeClient).to.have.property("xframe");
-        expect(_fakeClient.xframe).to.have.property("source");
-        expect(_fakeClient.xframe).to.have.property("instanceId");
-        expect(_fakeClient.xframe).to.have.property("autoReciprocate");
-        expect(_fakeClient.xframe).to.have.property("send");
-        expect(_fakeClient.xframe).to.have.property("reciprocate");
-        expect(_fakeClient.xframe).to.have.property("attachToClient");
-        expect(_fakeClient.xframe.instanceId).to.be(postal.instanceId);
-        expect(_fakeClient.xframe.autoReciprocate).to.be(true);
-      });
-      it('should call postMessage due to auto-reciprocation', function(){
-        expect(_msg).to.eql({
-          postal     : true,
-          type       : 'ready',
-          instanceId : postal.instanceId
-        });
-        expect(_origin).to.be(window.location.origin);
-      });
-    });
-    describe("With a message event", function(){
-      var _envelope, _senderId, _onMsg;
-      var _fakeOnMsg = function(envelope, senderId) {
-        _envelope = envelope;
-        _senderId = senderId;
-      };
-      beforeEach(function(){
-        _onMsg = postal.fedx.onFederatedMsg;
-        postal.fedx.onFederatedMsg = _fakeOnMsg;
-        postal.fedx.transports.xframe.onMessage({
-          origin     : window.location.origin,
-          data: {
-            postal     : true,
-            type       : 'message',
-            instanceId : postal.instanceId,
-            envelope   : {
-              channel : "something",
-              topic   : "interest.ing",
-              data    : "Oh, hai Batman!"
-            }
-          }
-        });
-      });
-      afterEach(function(){
-        postal.fedx.onFederatedMsg = _onMsg;
-      });
-      it('should invoke postal.fedx.onFederatedMsg with correct arguments', function(){
-        expect(_envelope).to.eql({
-          channel : "something",
-          topic   : "interest.ing",
-          data    : "Oh, hai Batman!"
-        });
-        expect(_senderId).to.be(postal.instanceId);
-      });
-    });
-  });
+	describe( "When calling send on an XFrameClient instance", function(){
+		var client;
+		beforeEach(function(){
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should pass correct arguments to target instance", function() {
+			client.send( { foo: "bar" } );
+			expect( fakeTarget.msg ).to.be( '{"postal":true,"packingSlip":{"foo":"bar"}}' );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+		it( "should not send if shouldProcess returns false", function() {
+			postal.fedx.transports.xframe.configure({});
+			client.send( { foo: "bar" } );
+			expect( fakeTarget.msg ).to.be( undefined );
+			expect( fakeTarget.targetUrl ).to.be( undefined );
+		});
+	});
 
-  describe("When calling shouldProcess", function () {
-    describe("With default values", function () {
-      it('should return true', function(){
-        expect(postal.fedx.transports.xframe.shouldProcess(getFakeEvent(function(){}))).to.be(true);
-      })
-    });
-    describe("With matching domains", function () {
-      it('should return true', function(){
-        var evnt = getFakeEvent(function(){});
-        evnt.origin = window.location.origin;
-        expect(postal.fedx.transports.xframe.shouldProcess(evnt)).to.be(true);
-      });
-    });
-    describe("With mismatched domains", function () {
-      it('should return false', function(){
-        var evnt = getFakeEvent(function(){});
-        evnt.origin = "http://something.else.com:3080";
-        expect(postal.fedx.transports.xframe.shouldProcess(evnt)).to.be(false);
-      });
-    });
-    describe("With plugin disabled", function () {
-      beforeEach(function(){
-        postal.fedx.transports.xframe.config({enabled: false});
-      });
-      afterEach(function(){
-        postal.fedx.transports.xframe.config({});
-      });
-      it('should return false', function(){
-        var evnt = getFakeEvent(function(){});
-        expect(postal.fedx.transports.xframe.shouldProcess(evnt)).to.be(false);
-      })
-    });
-  });
+	describe( "When calling sendPing on an XFrameClient instance", function(){
+		var client;
+		// {"postal":true,"packingSlip":{"type":"federation.ping","timeStamp":"2013-01-11T19:32:31.893Z","ticket":"f2aa9b2b-1c12-455c-ac1e-af991648607b"}}
+		beforeEach(function(){
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should pass correct arguments to target instance", function() {
+			client.sendPing();
+			var msg = JSON.parse( fakeTarget.msg );
+			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+			expect( msg.postal ).to.be( true );
+			expect( msg.packingSlip.type ).to.be( "federation.ping" );
+			expect( msg.packingSlip ).to.have.property( "timeStamp" );
+			expect( msg.packingSlip ).to.have.property( "ticket" );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+		it( "should not send if shouldProcess returns false", function() {
+			postal.fedx.transports.xframe.configure({});
+			client.sendPing();
+			expect( fakeTarget.msg ).to.be( undefined );
+			expect( fakeTarget.targetUrl ).to.be( undefined );
+		});
+	});
 
-  describe("When calling signalReady", function () {
-    var origGetTargets, _msg, _domain;
-    var mockedTargets = [
-      {
-        postMessage: function(msg, domain) {
-          _msg = msg;
-          _domain = domain;
-        }
-      }
-    ];
-    beforeEach(function(){
-      origGetTargets = postal.fedx.transports.xframe.getTargets;
-      postal.fedx.transports.xframe.getTargets = function() {
-        return [mockedTargets[0]];
-      };
-    });
-    afterEach(function(){
-      postal.fedx.transports.xframe.getTargets = origGetTargets;
-      _msg = undefined;
-      _domain = undefined;
-    });
-    describe("With no target override argument provided", function(){
-      it('should invoke postMessage with the correct arguments', function(){
-        postal.fedx.transports.xframe.signalReady();
-        expect(_msg).to.eql({
-          postal     : true,
-          type       : 'ready',
-          instanceId : postal.instanceId
-        });
-        expect(_domain).to.be(window.location.origin);
-      });
-    });
-    describe("With a non-array target override argument provided", function(){
-      var _msg2, _domain2;
-      postal.fedx.transports.xframe.signalReady({
-        postMessage: function(msg, domain) {
-          _msg2 = msg;
-          _domain2 = domain;
-        }
-      });
-      it('should invoke postMessage with the correct arguments', function(){
-        expect(_msg2).to.eql({
-          postal     : true,
-          type       : 'ready',
-          instanceId : postal.instanceId
-        });
-        expect(_domain2).to.be(window.location.origin);
-        expect(_msg).to.be(undefined);
-        expect(_domain).to.be(undefined);
-      });
-    });
-    describe("With an array of target overrides provided", function(){
-      var _msg2 = 0, _domain2 = 0;
-      postal.fedx.transports.xframe.signalReady([
-        {
-          postMessage: function(msg, domain) {
-            _msg2 += 1;
-            _domain2 += 1;
-          }
-        },
-        {
-          postMessage: function(msg, domain) {
-            _msg2 += 1;
-            _domain2 += 1;
-          }
-        }
-      ]);
-      it('should invoke postMessage with the correct arguments', function(){
-        expect(_msg2).to.be(2);
-        expect(_domain2).to.be(2);
-        expect(_msg).to.be(undefined);
-        expect(_domain).to.be(undefined);
-      });
-    });
-  });
-});
+	describe( "When calling sendPong on an XFrameClient instance", function(){
+		var client;
+		var pingMsg = {"postal":true,"packingSlip":{"type":"federation.ping","timeStamp":"2013-01-11T19:32:31.893Z","ticket":"f2aa9b2b-1c12-455c-ac1e-af991648607b"}}
+		beforeEach(function(){
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should pass correct arguments to target instance", function() {
+			client.sendPong(pingMsg.packingSlip);
+			var msg = JSON.parse( fakeTarget.msg );
+			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+			expect( msg.postal ).to.be( true );
+			expect( msg.packingSlip.type ).to.be( "federation.pong" );
+			expect( msg.packingSlip ).to.have.property( "pingData" );
+			expect( msg.packingSlip.pingData.ticket ).to.be( "f2aa9b2b-1c12-455c-ac1e-af991648607b" );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+		it( "should not send if shouldProcess returns false", function() {
+			postal.fedx.transports.xframe.configure({});
+			client.sendPing();
+			expect( fakeTarget.msg ).to.be( undefined );
+			expect( fakeTarget.targetUrl ).to.be( undefined );
+		});
+	});
+
+	describe( "When calling sendMessage on an XFrameClient instance", function(){
+		var client;
+		var env = { channel: "federate", topic: "all.the.things", data: "Booyah!" };
+		beforeEach(function(){
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should not send the message if handshakeComplete is false", function(){
+			client.sendMessage(env);
+			expect( typeof fakeTarget.msg === "undefined" ).to.be(true);
+			expect( typeof fakeTarget.targetUrl === "undefined" ).to.be(true);
+		});
+		it( "should pass correct arguments to target instance if handshakeComplete is true", function() {
+			client.handshakeComplete = true;
+			client.sendMessage(env);
+			var msg = JSON.parse( fakeTarget.msg );
+			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+			expect( msg.postal ).to.be( true );
+			expect( msg.packingSlip.type ).to.be( "federation.message" );
+			expect( msg.packingSlip.envelope ).to.eql( { channel: "federate", topic: "all.the.things", data: "Booyah!", knownIds: [], originId: 'test123' } );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+		it( "should not send if shouldProcess returns false", function() {
+			postal.fedx.transports.xframe.configure({});
+			client.sendMessage(env);
+			expect( fakeTarget.msg ).to.be( undefined );
+			expect( fakeTarget.targetUrl ).to.be( undefined );
+		});
+	});
+
+	describe( "When calling sendBundle on an XFrameClient instance", function(){
+		var client;
+		var slip1 = postal.fedx.getPackingSlip("message", { channel: "federate", topic: "all.the.things",   data: "Booyah!" });
+		var slip2 = postal.fedx.getPackingSlip("message", { channel: "federate", topic: "all.the.messages", data: "BAM!" });
+		beforeEach(function(){
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should pass correct arguments to target instance", function(){
+			client.sendBundle([ slip1, slip2 ]);
+			var msg = JSON.parse( fakeTarget.msg );
+			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+			expect( msg.postal ).to.be( true );
+			expect( msg.packingSlip.type ).to.be( "federation.bundle" );
+			expect( msg.packingSlip ).to.have.property( "timeStamp" );
+			expect( msg.packingSlip.packingSlips.length ).to.be( 2 );
+			expect( msg.packingSlip.packingSlips[0].type ).to.be( "federation.message" );
+			expect( msg.packingSlip.packingSlips[0] ).to.have.property( "timeStamp" );
+			expect( msg.packingSlip.packingSlips[0].envelope ).to.eql( { channel: "federate", topic: "all.the.things",   data: "Booyah!" } );
+			expect( msg.packingSlip.packingSlips[1].type ).to.be( "federation.message" );
+			expect( msg.packingSlip.packingSlips[1] ).to.have.property( "timeStamp" );
+			expect( msg.packingSlip.packingSlips[1].envelope ).to.eql( { channel: "federate", topic: "all.the.messages", data: "BAM!" } );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+	});
+
+	describe( "When calling getTargets", function(){
+		var targets;
+		beforeEach(function(){
+			targets = postal.fedx.transports.xframe.getTargets();
+		});
+		it("default getTargets should return available iframes", function() {
+			expect( targets.length ).to.be( 1 );
+			expect( targets[0] ).to.have.property( "target" );
+			expect( targets[0] ).to.have.property( "origin" );
+			expect( targets[0].target ).to.have.property( "postMessage" );
+			expect( typeof targets[0].target.postMessage ).to.be( "function" );
+			expect( targets[0].origin ).to.be( window.location.origin );
+		});
+	});
+
+	describe( "When calling wrapForTransport", function(){
+		var slip1 = postal.fedx.getPackingSlip("message", { channel: "federate", topic: "all.the.things",   data: "Booyah!" });
+		var regex = /{\"postal\":true,\"packingSlip\":{\"type\":\"federation.message\",\"timeStamp\":\"[a-z,A-Z,0-9,\-,\.,:]*\",\"envelope\":{\"channel\":\"federate\",\"topic\":\"all.the.things\",\"data\":\"Booyah!\"}}}/;
+		var wrapped;
+		beforeEach(function(){
+			wrapped = postal.fedx.transports.xframe.wrapForTransport(slip1);
+		});
+		it( "should serialize the payload to JSON for cross-frame transport", function(){
+			expect( Object.prototype.toString.call( wrapped ) ).to.be("[object String]" );
+			expect( regex.test(wrapped) ).to.be( true );
+		});
+	});
+
+	describe( "When calling unwrapFromTransport", function(){
+		var unwrapped;
+		beforeEach(function(){
+			unwrapped = postal.fedx.transports.xframe.unwrapFromTransport(testFederationMessage);
+		});
+		it( "should de-serialize the payload from JSON", function(){
+			expect( unwrapped ).to.eql({
+				"postal"      :true,
+				"packingSlip" :{
+					"type"      :"federation.message",
+					"timeStamp" :"2013-01-12T16:15:23.853Z",
+					"envelope"  :{
+						"channel" :"federate",
+						"topic"   :"all.the.things",
+						"data"    :"Booyah!"
+					}
+				}
+			});
+		});
+	});
+
+	describe( "When calling routeMessage", function(){
+		var client, result;
+		beforeEach(function(){
+			result = undefined;
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			client.onMessage = function( packingSlip ) {
+				result = packingSlip;
+			};
+			postal.fedx.transports.xframe.remotes = [ client ];
+		});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.transports.xframe.remotes = [];
+		});
+		it( "route the message to the correct client if it's a postal federation msg", function() {
+			postal.fedx.transports.xframe.routeMessage( fakeEvent );
+			expect( result ).to.eql({
+				"type"      :"federation.message",
+				"timeStamp" :"2013-01-12T16:15:23.853Z",
+				"envelope"  :{
+					"channel" :"federate",
+					"topic"   :"all.the.things",
+					"data"    :"Booyah!"
+				}
+			});
+		});
+		it( "should not route a non-postal federation message", function(){
+			postal.fedx.transports.xframe.routeMessage( { origin: "http://fake.origin", source: fakeTarget, data: '{"foo":"bar", "baz":"bacon"}' } );
+			expect( typeof result === "undefined" ).to.be( true );
+		});
+	});
+
+	describe( "When calling sendMessage", function() {
+		var client, result;
+		beforeEach(function(){
+			result = undefined;
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+			postal.fedx.transports.xframe.remotes = [ client ];
+			});
+		afterEach(function(){
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.transports.xframe.remotes = [];
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should not send the message if handshakeComplete is false", function(){
+			postal.fedx.sendMessage( { channel: "federate", topic: "all.the.things",   data: "Booyah!" } );
+			expect( typeof fakeTarget.msg === "undefined" ).to.be(true);
+			expect( typeof fakeTarget.targetUrl === "undefined" ).to.be(true);
+		});
+		it( "should pass correct arguments to target instance if handshakeComplete is true", function() {
+			client.handshakeComplete = true;
+			postal.fedx.sendMessage( { channel: "federate", topic: "all.the.things",   data: "Booyah!" } );
+			var msg = JSON.parse( fakeTarget.msg );
+			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+			expect( msg.postal ).to.be( true );
+			expect( msg.packingSlip.type ).to.be( "federation.message" );
+			expect( msg.packingSlip.envelope ).to.eql( { channel: "federate", topic: "all.the.things", data: "Booyah!", knownIds: [], originId: "test123" } );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+		it( "should not send if shouldProcess returns false", function() {
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.sendMessage( { channel: "federate", topic: "all.the.things",   data: "Booyah!" } );
+			expect( fakeTarget.msg ).to.be( undefined );
+			expect( fakeTarget.targetUrl ).to.be( undefined );
+		});
+	});
+
+	describe( "When calling signalReady", function () {
+		var client;
+		beforeEach( function () {
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+			postal.fedx.transports.xframe.remotes = [ client ];
+			});
+		afterEach( function () {
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.transports.xframe.remotes = [];
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+		it( "should pass correct arguments to target instance", function() {
+			postal.fedx.transports.xframe.signalReady({ target: fakeTarget, origin: "http://fake.origin"});
+			var msg = JSON.parse( fakeTarget.msg );
+			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+			expect( msg.postal ).to.be( true );
+			expect( msg.packingSlip.type ).to.be( "federation.ping" );
+			expect( msg.packingSlip ).to.have.property( "timeStamp" );
+			expect( msg.packingSlip ).to.have.property( "ticket" );
+			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
+		});
+		it( "should not send if shouldProcess returns false", function() {
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.transports.xframe.signalReady({ target: fakeTarget, origin: "http://fake.origin"});
+			expect( fakeTarget.msg ).to.be( undefined );
+			expect( fakeTarget.targetUrl ).to.be( undefined );
+		});
+	} );
+} );

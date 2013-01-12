@@ -6,18 +6,24 @@
 </head>
 <body>
     <div id="mocha"></div>
+    <iframe src="iframe.html" style="overflow: hidden;visibility: hidden;" height="0" width="0" frameborder="0"></iframe>
     <script src="/ext/jquery-1.8.2.js"></script>
     <script src="/ext/underscore.js"></script>
     <script src="/ext/expect.js"></script>
     <script src="/ext/mocha.js"></script>
     <script type="text/javascript">
         mocha.setup({ ui: 'bdd', timeout: 60000, ignoreLeaks: true });
+        if (!window.location.origin) {
+            window.location.origin = window.location.protocol + "//" + window.location.host;
+        }
     </script>
     <script type="text/javascript" src="../ext/postal.js"></script>
+    <script type="text/javascript" src="../ext/riveter.js"></script>
     <script type="text/javascript" src="../ext/postal.federation.js"></script>
     <script type="text/javascript" src="../lib/postal.xframe.js"></script>
     <script type="text/javascript" src="xframe.units.spec.js"></script>
     <script type="text/javascript">
+        postal.instanceId("test123");
         mocha.run();
     </script>
 </body>

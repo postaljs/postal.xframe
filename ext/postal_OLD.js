@@ -2,29 +2,27 @@
  postal
  Author: Jim Cowart (http://freshbrewedcode.com/jimcowart)
  License: Dual licensed MIT (http://www.opensource.org/licenses/mit-license) & GPL (http://www.opensource.org/licenses/gpl-license)
- Version 0.8.0
+ Version 0.7.3
  */
 (function ( root, factory ) {
-	if ( typeof module === "object" && module.exports ) {
-		// Node, or CommonJS-Like environments
-		module.exports = function ( _ ) {
-			_ = _ || require( "underscore" );
-			return factory( _ );
-		}
-	} else if ( typeof define === "function" && define.amd ) {
+	if ( typeof define === "function" && define.amd ) {
 		// AMD. Register as an anonymous module.
-		define( ["."], function ( _ ) {
+		define( ["underscore"], function ( _ ) {
 			return factory( _, root );
 		} );
 	} else {
 		// Browser globals
-		root.postal = factory( root._, root );
+		factory( root._, root );
 	}
 }( this, function ( _, global, undefined ) {
 
 	var DEFAULT_CHANNEL = "/",
+		DEFAULT_PRIORITY = 50,
 		DEFAULT_DISPOSEAFTER = 0,
-		SYSTEM_CHANNEL = "postal";
+		SYSTEM_CHANNEL = "postal",
+		NO_OP = function () {
+		};
+	
 	var ConsecutiveDistinctPredicate = function () {
 		var previous;
 		return function ( data ) {
@@ -41,52 +39,84 @@
 		};
 	};
 	var DistinctPredicate = function () {
-		var previous = [];
+	  var previous = [];
 	
-		return function ( data ) {
-			var isDistinct = !_.any( previous, function ( p ) {
-				if ( _.isObject( data ) || _.isArray( data ) ) {
-					return _.isEqual( data, p );
-				}
-				return data === p;
-			} );
-			if ( isDistinct ) {
-				previous.push( data );
-			}
-			return isDistinct;
-		};
+	  return function (data) {
+	    var isDistinct = !_.any(previous, function (p) {
+	      if (_.isObject(data) || _.isArray(data)) {
+	        return _.isEqual(data, p);
+	      }
+	      return data === p;
+	    });
+	    if (isDistinct) {
+	      previous.push(data);
+	    }
+	    return isDistinct;
+	  };
 	};
-	var ChannelDefinition = function ( channelName ) {
+	var ChannelDefinition = function ( channelName, defaultTopic ) {
 		this.channel = channelName || DEFAULT_CHANNEL;
+		this._topic = defaultTopic || "";
 	};
 	
-	ChannelDefinition.prototype.subscribe = function () {
-		return arguments.length === 1 ?
-		       new SubscriptionDefinition( this.channel, arguments[0].topic, arguments[0].callback ) :
-		       new SubscriptionDefinition( this.channel, arguments[0], arguments[1] );
+	ChannelDefinition.prototype = {
+		subscribe : function () {
+			var len = arguments.length;
+			if ( len === 1 ) {
+				return new SubscriptionDefinition( this.channel, this._topic, arguments[0] );
+			}
+			else if ( len === 2 ) {
+				return new SubscriptionDefinition( this.channel, arguments[0], arguments[1] );
+			}
+		},
+	
+		publish : function ( obj ) {
+			var _obj = obj || {};
+			var envelope = {
+				channel : this.channel,
+				topic : this._topic,
+				data : _obj
+			};
+			// If this is an envelope....
+			if ( _obj.topic && _obj.data ) {
+				envelope = _obj;
+				envelope.channel = envelope.channel || this.channel;
+			}
+			envelope.timeStamp = new Date();
+			postal.configuration.bus.publish( envelope );
+			return envelope;
+		},
+	
+		topic : function ( topic ) {
+			if ( topic === this._topic ) {
+				return this;
+			}
+			return new ChannelDefinition( this.channel, topic );
+		}
 	};
 	
-	ChannelDefinition.prototype.publish = function () {
-		var envelope = arguments.length === 1 ? arguments[0] : { topic : arguments[0], data : arguments[1] };
-		envelope.channel = this.channel;
-		return postal.configuration.bus.publish( envelope );
-	};
 	var SubscriptionDefinition = function ( channel, topic, callback ) {
 		this.channel = channel;
 		this.topic = topic;
 		this.callback = callback;
-		this.constraints = [];
+		this.priority = DEFAULT_PRIORITY;
+		this.constraints = new Array( 0 );
+		this.maxCalls = DEFAULT_DISPOSEAFTER;
+		this.onHandled = NO_OP;
 		this.context = null;
 		postal.configuration.bus.publish( {
 			channel : SYSTEM_CHANNEL,
 			topic : "subscription.created",
+			timeStamp : new Date(),
 			data : {
 				event : "subscription.created",
 				channel : channel,
 				topic : topic
 			}
 		} );
+	
 		postal.configuration.bus.subscribe( this );
+	
 	};
 	
 	SubscriptionDefinition.prototype = {
@@ -95,6 +125,7 @@
 			postal.configuration.bus.publish( {
 				channel : SYSTEM_CHANNEL,
 				topic : "subscription.removed",
+				timeStamp : new Date(),
 				data : {
 					event : "subscription.removed",
 					channel : this.channel,
@@ -115,19 +146,20 @@
 			if ( _.isNaN( maxCalls ) || maxCalls <= 0 ) {
 				throw "The value provided to disposeAfter (maxCalls) must be a number greater than zero.";
 			}
-			var fn = this.callback;
+	
+			var fn = this.onHandled;
 			var dispose = _.after( maxCalls, _.bind( function () {
-				this.unsubscribe();
+				this.unsubscribe( this );
 			}, this ) );
 	
-			this.callback = function () {
+			this.onHandled = function () {
 				fn.apply( this.context, arguments );
 				dispose();
 			};
 			return this;
 		},
 	
-		distinctUntilChanged : function () {
+	  distinctUntilChanged : function () {
 			this.withConstraint( new ConsecutiveDistinctPredicate() );
 			return this;
 		},
@@ -137,9 +169,9 @@
 			return this;
 		},
 	
-		once : function () {
-			this.disposeAfter( 1 );
-		},
+	  once: function() {
+	    this.disposeAfter(1);
+	  },
 	
 		withConstraint : function ( predicate ) {
 			if ( !_.isFunction( predicate ) ) {
@@ -186,6 +218,15 @@
 			return this;
 		},
 	
+		withPriority : function ( priority ) {
+			if ( _.isNaN( priority ) ) {
+				throw "Priority must be a number";
+			}
+			this.priority = priority;
+			postal.configuration.bus.changePriority( this );
+			return this;
+		},
+	
 		withThrottle : function ( milliseconds ) {
 			if ( _.isNaN( milliseconds ) ) {
 				throw "Milliseconds must be a number";
@@ -200,6 +241,7 @@
 			return this;
 		}
 	};
+	
 	var bindingsResolver = {
 		cache : { },
 	
@@ -208,10 +250,10 @@
 				return true;
 			}
 			var pattern = ("^" + binding.replace( /\./g, "\\." )            // escape actual periods
-				                        .replace( /\*/g, "[A-Z,a-z,0-9]*" ) // asterisks match any alpha-numeric 'word'
-				                        .replace( /#/g, ".*" ) + "$")       // hash matches 'n' # of words (+ optional on start/end of topic)
-				                        .replace( "\\..*$", "(\\..*)*$" )   // fix end of topic matching on hash wildcards
-				                        .replace( "^.*\\.", "^(.*\\.)*" );  // fix beginning of topic matching on hash wildcards
+										.replace( /\*/g, "[A-Z,a-z,0-9]*" ) // asterisks match any alpha-numeric 'word'
+										.replace( /#/g, ".*" ) + "$")       // hash matches 'n' # of words (+ optional on start/end of topic)
+										.replace( "\\..*$", "(\\..*)*$" )   // fix end of topic matching on hash wildcards
+										.replace( "^.*\\.", "^(.*\\.)*" );  // fix beginning of topic matching on hash wildcards
 			var rgx = new RegExp( pattern );
 			var result = rgx.test( topic );
 			if ( result ) {
@@ -227,7 +269,9 @@
 			this.cache = {};
 		}
 	};
+	
 	var localBus = {
+	
 		addWireTap : function ( callback ) {
 			var self = this;
 			self.wireTaps.push( callback );
@@ -239,28 +283,47 @@
 			};
 		},
 	
+		changePriority : function ( subDef ) {
+			var idx, found;
+			if ( this.subscriptions[subDef.channel] && this.subscriptions[subDef.channel][subDef.topic] ) {
+				this.subscriptions[subDef.channel][subDef.topic] = _.without( this.subscriptions[subDef.channel][subDef.topic], subDef );
+				idx = this.subscriptions[subDef.channel][subDef.topic].length - 1;
+				for ( ; idx >= 0; idx-- ) {
+					if ( this.subscriptions[subDef.channel][subDef.topic][idx].priority <= subDef.priority ) {
+						this.subscriptions[subDef.channel][subDef.topic].splice( idx + 1, 0, subDef );
+						found = true;
+						break;
+					}
+				}
+				if ( !found ) {
+					this.subscriptions[subDef.channel][subDef.topic].unshift( subDef );
+				}
+			}
+		},
+	
 		publish : function ( envelope ) {
-			envelope.timeStamp = new Date();
 			_.each( this.wireTaps, function ( tap ) {
 				tap( envelope.data, envelope );
 			} );
+	
 			if ( this.subscriptions[envelope.channel] ) {
 				_.each( this.subscriptions[envelope.channel], function ( topic ) {
 					// TODO: research faster ways to handle this than _.clone
 					_.each( _.clone( topic ), function ( subDef ) {
 						if ( postal.configuration.resolver.compare( subDef.topic, envelope.topic ) ) {
 							if ( _.all( subDef.constraints, function ( constraint ) {
-								return constraint.call( subDef.context, envelope.data, envelope );
+								return constraint.call(subDef.context, envelope.data, envelope );
 							} ) ) {
 								if ( typeof subDef.callback === 'function' ) {
 									subDef.callback.call( subDef.context, envelope.data, envelope );
+									subDef.onHandled();
 								}
 							}
 						}
 					} );
 				} );
 			}
-			return envelope;
+	
 		},
 	
 		reset : function () {
@@ -278,12 +341,13 @@
 	
 		subscribe : function ( subDef ) {
 			var idx, found, fn, channel = this.subscriptions[subDef.channel], subs;
+	
 			if ( !channel ) {
 				channel = this.subscriptions[subDef.channel] = {};
 			}
 			subs = this.subscriptions[subDef.channel][subDef.topic];
 			if ( !subs ) {
-				subs = this.subscriptions[subDef.channel][subDef.topic] = [];
+				subs = this.subscriptions[subDef.channel][subDef.topic] = new Array( 0 );
 			}
 			subs.push( subDef );
 			return subDef;
@@ -291,7 +355,7 @@
 	
 		subscriptions : {},
 	
-		wireTaps : [],
+		wireTaps : new Array( 0 ),
 	
 		unsubscribe : function ( config ) {
 			if ( this.subscriptions[config.channel][config.topic] ) {
@@ -306,29 +370,93 @@
 			}
 		}
 	};
+	
+	var publishPicker = {
+			"1" : function ( envelope ) {
+				if ( !envelope ) {
+					throw new Error( "publishing from the 'global' postal.publish call requires a valid envelope." );
+				}
+				envelope.channel = envelope.channel || DEFAULT_CHANNEL;
+				envelope.timeStamp = new Date();
+				postal.configuration.bus.publish( envelope );
+				return envelope;
+			},
+			"2" : function ( topic, data ) {
+				var envelope = { channel : DEFAULT_CHANNEL, topic : topic, timeStamp : new Date(), data : data };
+				postal.configuration.bus.publish( envelope );
+				return envelope;
+			},
+			"3" : function ( channel, topic, data ) {
+				var envelope = { channel : channel, topic : topic, timeStamp : new Date(), data : data };
+				postal.configuration.bus.publish( envelope );
+				return envelope;
+			}
+		},
+		channelPicker = {
+			"1" : function ( chn ) {
+				var channel = chn, topic, options = {};
+				if ( Object.prototype.toString.call( channel ) === "[object String]" ) {
+					channel = DEFAULT_CHANNEL;
+					topic = chn;
+				}
+				else {
+					channel = chn.channel || DEFAULT_CHANNEL;
+					topic = chn.topic;
+					options = chn.options || options;
+				}
+				return new postal.channelTypes[ options.type || "local" ]( channel, topic );
+			},
+			"2" : function ( chn, tpc ) {
+				var channel = chn, topic = tpc, options = {};
+				if ( Object.prototype.toString.call( tpc ) === "[object Object]" ) {
+					channel = DEFAULT_CHANNEL;
+					topic = chn;
+					options = tpc;
+				}
+				return new postal.channelTypes[ options.type || "local" ]( channel, topic );
+			},
+			"3" : function ( channel, topic, options ) {
+				return new postal.channelTypes[ options.type || "local" ]( channel, topic );
+			}
+		},
+		sessionInfo = {};
+	
+	// save some setup time, albeit tiny
 	localBus.subscriptions[SYSTEM_CHANNEL] = {};
+	
 	var postal = {
 		configuration : {
 			bus : localBus,
 			resolver : bindingsResolver,
 			DEFAULT_CHANNEL : DEFAULT_CHANNEL,
+			DEFAULT_PRIORITY : DEFAULT_PRIORITY,
+			DEFAULT_DISPOSEAFTER : DEFAULT_DISPOSEAFTER,
 			SYSTEM_CHANNEL : SYSTEM_CHANNEL
 		},
 	
-		ChannelDefinition : ChannelDefinition,
-		SubscriptionDefinition : SubscriptionDefinition,
+		channelTypes : {
+			local : ChannelDefinition
+		},
 	
-		channel : function ( channelName ) {
-			return new ChannelDefinition( channelName );
+		channel : function () {
+			var len = arguments.length;
+			if ( channelPicker[len] ) {
+				return channelPicker[len].apply( this, arguments );
+			}
 		},
 	
 		subscribe : function ( options ) {
-			return new SubscriptionDefinition( options.channel || DEFAULT_CHANNEL, options.topic, options.callback );
+			var callback = options.callback,
+				topic = options.topic,
+				channel = options.channel || DEFAULT_CHANNEL;
+			return new SubscriptionDefinition( channel, topic, callback );
 		},
 	
-		publish : function ( envelope ) {
-			envelope.channel = envelope.channel || DEFAULT_CHANNEL;
-			return postal.configuration.bus.publish( envelope );
+		publish : function () {
+			var len = arguments.length;
+			if ( publishPicker[len] ) {
+				return publishPicker[len].apply( this, arguments );
+			}
 		},
 	
 		addWireTap : function ( callback ) {
@@ -336,9 +464,13 @@
 		},
 	
 		linkChannels : function ( sources, destinations ) {
-			var result   = [];
-			sources      = !_.isArray( sources ) ? [sources] : sources;
-			destinations = !_.isArray( destinations ) ? [destinations] : destinations;
+			var result = [];
+			if ( !_.isArray( sources ) ) {
+				sources = [sources];
+			}
+			if ( !_.isArray( destinations ) ) {
+				destinations = [destinations];
+			}
 			_.each( sources, function ( source ) {
 				var sourceTopic = source.topic || "#";
 				_.each( destinations, function ( destination ) {
@@ -364,16 +496,23 @@
 		utils : {
 			getSubscribersFor : function () {
 				var channel = arguments[ 0 ],
-					tpc = arguments[ 1 ];
+					tpc = arguments[ 1 ],
+					result = [];
 				if ( arguments.length === 1 ) {
-					channel = arguments[ 0 ].channel || postal.configuration.DEFAULT_CHANNEL;
-					tpc = arguments[ 0 ].topic;
+					if ( Object.prototype.toString.call( channel ) === "[object String]" ) {
+						channel = postal.configuration.DEFAULT_CHANNEL;
+						tpc = arguments[ 0 ];
+					}
+					else {
+						channel = arguments[ 0 ].channel || postal.configuration.DEFAULT_CHANNEL;
+						tpc = arguments[ 0 ].topic;
+					}
 				}
 				if ( postal.configuration.bus.subscriptions[ channel ] &&
-				     postal.configuration.bus.subscriptions[ channel ].hasOwnProperty( tpc ) ) {
-					return postal.configuration.bus.subscriptions[ channel ][ tpc ];
+					postal.configuration.bus.subscriptions[ channel ].hasOwnProperty( tpc ) ) {
+					result = postal.configuration.bus.subscriptions[ channel ][ tpc ];
 				}
-				return [];
+				return result;
 			},
 	
 			reset : function () {
@@ -383,5 +522,6 @@
 		}
 	};
 
+	global.postal = postal;
 	return postal;
 } ));
