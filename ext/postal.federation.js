@@ -215,7 +215,7 @@
   	}
   };
   
-  FederationClient.prototype.shouldProcess = function ( parsed, meta ) {
+  FederationClient.prototype.shouldProcess = function () {
   	return true;
   };
   

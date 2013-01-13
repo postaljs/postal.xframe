@@ -12,9 +12,9 @@ var XFRAME = "xframe",
 			var hasDomainFilters = !!_config.allowedOrigins.length;
 			return _config.enabled && (this.options.origin === "*" || (hasDomainFilters && _.contains( _config.allowedOrigins, this.options.origin ) || !hasDomainFilters ));
 		},
-		send : function ( msg ) {
+		send : function ( packingSlip ) {
 			if ( this.shouldProcess() ) {
-				this.target.postMessage( postal.fedx.transports[XFRAME].wrapForTransport( msg ), this.options.origin );
+				this.target.postMessage( postal.fedx.transports[XFRAME].wrapForTransport( packingSlip ), this.options.origin );
 			}
 		}
 	} ),
