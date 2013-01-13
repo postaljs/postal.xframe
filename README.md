@@ -63,7 +63,7 @@ postal.fedx.addFilter([
 postal.fedx.signalReady();
 
 // This message will be published locally as well as sent across to the remote postal
- instances of any federated iframes
+// instances of any federated iframes
 postal.publish({
 	channel : "channelA",
 	topic   : "message.topic",
