@@ -19,7 +19,7 @@ describe( "postal.xframe - unit tests", function () {
 	var fakeEvent = {
 		origin : "http://fake.origin",
 		source : fakeTarget,
-		data   : testFederationMessage
+		data   : postal.fedx.transports.eagerSerialize ? testFederationMessage : JSON.parse(testFederationMessage)
 	};
 	describe( "When checking configuration", function () {
 		describe( "When using defaults", function () {
@@ -122,7 +122,11 @@ describe( "postal.xframe - unit tests", function () {
 		});
 		it( "should pass correct arguments to target instance", function() {
 			client.send( { foo: "bar" } );
-			expect( fakeTarget.msg ).to.be( '{"postal":true,"packingSlip":{"foo":"bar"}}' );
+      if(postal.fedx.transports.eagerSerialize) {
+        expect( fakeTarget.msg ).to.be( '{"postal":true,"packingSlip":{"foo":"bar"}}' );
+      } else {
+        expect( fakeTarget.msg ).to.eql( {"postal":true,"packingSlip":{"foo":"bar"}} );
+      }
 			expect( fakeTarget.targetUrl ).to.be( "http://fake.origin" );
 		});
 		it( "should not send if shouldProcess returns false", function() {
@@ -146,9 +150,15 @@ describe( "postal.xframe - unit tests", function () {
 			delete fakeTarget.msg;
 		});
 		it( "should pass correct arguments to target instance", function() {
-			client.sendPing();
-			var msg = JSON.parse( fakeTarget.msg );
-			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      var msg;
+      client.sendPing();
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object Object]' );
+      }
 			expect( msg.postal ).to.be( true );
 			expect( msg.packingSlip.type ).to.be( "federation.ping" );
 			expect( msg.packingSlip ).to.have.property( "timeStamp" );
@@ -176,9 +186,15 @@ describe( "postal.xframe - unit tests", function () {
 			delete fakeTarget.msg;
 		});
 		it( "should pass correct arguments to target instance", function() {
-			client.sendPong(pingMsg.packingSlip);
-			var msg = JSON.parse( fakeTarget.msg );
-			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      var msg;
+      client.sendPong(pingMsg.packingSlip);
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object Object]' );
+      }
 			expect( msg.postal ).to.be( true );
 			expect( msg.packingSlip.type ).to.be( "federation.pong" );
 			expect( msg.packingSlip ).to.have.property( "pingData" );
@@ -211,10 +227,16 @@ describe( "postal.xframe - unit tests", function () {
 			expect( typeof fakeTarget.targetUrl === "undefined" ).to.be(true);
 		});
 		it( "should pass correct arguments to target instance if handshakeComplete is true", function() {
-			client.handshakeComplete = true;
+      var msg;
+      client.handshakeComplete = true;
 			client.sendMessage(env);
-			var msg = JSON.parse( fakeTarget.msg );
-			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object Object]' );
+      }
 			expect( msg.postal ).to.be( true );
 			expect( msg.packingSlip.type ).to.be( "federation.message" );
 			expect( msg.packingSlip.envelope ).to.eql( { channel: "federate", topic: "all.the.things", data: "Booyah!", knownIds: [], originId: 'test123' } );
@@ -242,9 +264,15 @@ describe( "postal.xframe - unit tests", function () {
 			delete fakeTarget.msg;
 		});
 		it( "should pass correct arguments to target instance", function(){
-			client.sendBundle([ slip1, slip2 ]);
-			var msg = JSON.parse( fakeTarget.msg );
-			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      var msg;
+      client.sendBundle([ slip1, slip2 ]);
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object Object]' );
+      }
 			expect( msg.postal ).to.be( true );
 			expect( msg.packingSlip.type ).to.be( "federation.bundle" );
 			expect( msg.packingSlip ).to.have.property( "timeStamp" );
@@ -282,17 +310,29 @@ describe( "postal.xframe - unit tests", function () {
 			wrapped = postal.fedx.transports.xframe.wrapForTransport(slip1);
 		});
 		it( "should serialize the payload to JSON for cross-frame transport", function(){
-			expect( Object.prototype.toString.call( wrapped ) ).to.be("[object String]" );
-			expect( regex.test(wrapped) ).to.be( true );
+      var msg;
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( wrapped ) ).to.be("[object String]" );
+        expect( regex.test(wrapped) ).to.be( true );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( wrapped ) ).to.be("[object Object]" );
+        expect( regex.test(JSON.stringify(wrapped)) ).to.eql( true );
+      }
 		});
 	});
 
 	describe( "When calling unwrapFromTransport", function(){
 		var unwrapped;
 		beforeEach(function(){
-			unwrapped = postal.fedx.transports.xframe.unwrapFromTransport(testFederationMessage);
+      if(postal.fedx.transports.xframe.eagerSerialize) {
+        unwrapped = postal.fedx.transports.xframe.unwrapFromTransport(testFederationMessage);
+      } else {
+        unwrapped = postal.fedx.transports.xframe.unwrapFromTransport(JSON.parse(testFederationMessage));
+      }
 		});
-		it( "should de-serialize the payload from JSON", function(){
+		it( "should return expected payload", function(){
 			expect( unwrapped ).to.eql({
 				"postal"      :true,
 				"packingSlip" :{
@@ -361,10 +401,16 @@ describe( "postal.xframe - unit tests", function () {
 			expect( typeof fakeTarget.targetUrl === "undefined" ).to.be(true);
 		});
 		it( "should pass correct arguments to target instance if handshakeComplete is true", function() {
+      var msg;
 			client.handshakeComplete = true;
 			postal.fedx.sendMessage( { channel: "federate", topic: "all.the.things",   data: "Booyah!" } );
-			var msg = JSON.parse( fakeTarget.msg );
-			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object Object]' );
+      }
 			expect( msg.postal ).to.be( true );
 			expect( msg.packingSlip.type ).to.be( "federation.message" );
 			expect( msg.packingSlip.envelope ).to.eql( { channel: "federate", topic: "all.the.things", data: "Booyah!", knownIds: [], originId: "test123" } );
@@ -392,9 +438,15 @@ describe( "postal.xframe - unit tests", function () {
 			delete fakeTarget.msg;
 		});
 		it( "should pass correct arguments to target instance", function() {
+      var msg;
 			postal.fedx.transports.xframe.signalReady({ target: fakeTarget, origin: "http://fake.origin"});
-			var msg = JSON.parse( fakeTarget.msg );
-			expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      if(postal.fedx.transports.eagerSerialize) {
+        msg = JSON.parse( fakeTarget.msg );
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
+      } else {
+        msg = fakeTarget.msg;
+        expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object Object]' );
+      }
 			expect( msg.postal ).to.be( true );
 			expect( msg.packingSlip.type ).to.be( "federation.ping" );
 			expect( msg.packingSlip ).to.have.property( "timeStamp" );

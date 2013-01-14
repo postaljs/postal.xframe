@@ -1,3 +1,13 @@
+var useEagerSerialize = (function () {
+  var serialize = false;
+  window.addEventListener( "message", function callback ( e ) {
+    serialize = e.data.notAStupidBrowser === true;
+    window.removeEventListener( "message", callback );
+  }, false);
+  window.postMessage( { notAStupidBrowser: true }, window.location.protocol + "//" + window.location.host );
+  return serialize;
+}());
+
 var XFRAME = "xframe",
 	NO_OP = function () {},
 	_defaults = {
@@ -19,6 +29,7 @@ var XFRAME = "xframe",
 		}
 	} ),
 	plugin = postal.fedx.transports[XFRAME] = {
+    eagerSerialize : useEagerSerialize,
 		XFrameClient : XFrameClient,
 		configure : function ( cfg ) {
 			if ( cfg ) {
@@ -38,19 +49,30 @@ var XFRAME = "xframe",
 			return targets;
 		},
 		remotes : [],
-		wrapForTransport : function ( packingSlip ) {
-			return JSON.stringify( {
-				postal : true,
-				packingSlip : packingSlip
-			} );
-		},
-		unwrapFromTransport : function ( msgData ) {
-			try {
-				return JSON.parse( msgData );
-			} catch ( ex ) {
-				return {};
-			}
-		},
+		wrapForTransport : useEagerSerialize ?
+                         function ( packingSlip ) {
+                           return JSON.stringify( {
+                             postal : true,
+                             packingSlip : packingSlip
+                           } );
+                         } :
+                         function ( packingSlip ) {
+                           return {
+                             postal : true,
+                             packingSlip : packingSlip
+                           };
+                         },
+		unwrapFromTransport : useEagerSerialize ?
+                            function ( msgData ) {
+                              try {
+                                return JSON.parse( msgData );
+                              } catch ( ex ) {
+                                return {};
+                              }
+                            } :
+                            function ( msgData ) {
+                              return msgData;
+                            },
 		routeMessage : function ( event ) {
 			var parsed = this.unwrapFromTransport( event.data );
 			if ( parsed.postal ) {
