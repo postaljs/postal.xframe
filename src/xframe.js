@@ -3,9 +3,13 @@ if(!window.location.origin) {
   window.location.origin = window.location.protocol + "//" + window.location.host;
 }
 
-// I know, I KNOW. The alternative was to make xframe load ASYNC
-// so I saved you a perf hit by checking the effing UA
-// Elijah Manor threatened to unfriend me because of this...
+// I know, I KNOW. The alternative was was very expensive perf & time-wise
+// so I saved you a perf hit by checking the stinking UA
+// I sought the opinion of several other devs. We all traveled
+// to the far east to consult with the wisdom of a monk - turns
+// out he didn't know JavaScript, and our passports were stolen on the
+// return trip. We stowed away aboard a freighter headed back to the
+// US and by the time we got back, no one had heard of IE 8 or 9. True story.
 var useEagerSerialize = /MSIE [8,9]/.test(navigator.userAgent);
 
 var XFRAME = "xframe",

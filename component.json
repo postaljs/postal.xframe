@@ -1,6 +1,6 @@
 {
 	"name"    : "postal.xframe",
-	"version" : "0.2.0",
+	"version" : "0.2.1",
 	"main"    : ["lib/postal.federation.js"],
 	"dependencies": {
 		"underscore"        : "~1.1.7",
