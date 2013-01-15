@@ -19,7 +19,7 @@ describe( "postal.xframe - unit tests", function () {
 	var fakeEvent = {
 		origin : "http://fake.origin",
 		source : fakeTarget,
-		data   : postal.fedx.transports.eagerSerialize ? testFederationMessage : JSON.parse(testFederationMessage)
+		data   : postal.fedx.transports.xframe.eagerSerialize ? testFederationMessage : JSON.parse(testFederationMessage)
 	};
 	describe( "When checking configuration", function () {
 		describe( "When using defaults", function () {
@@ -122,7 +122,7 @@ describe( "postal.xframe - unit tests", function () {
 		});
 		it( "should pass correct arguments to target instance", function() {
 			client.send( { foo: "bar" } );
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         expect( fakeTarget.msg ).to.be( '{"postal":true,"packingSlip":{"foo":"bar"}}' );
       } else {
         expect( fakeTarget.msg ).to.eql( {"postal":true,"packingSlip":{"foo":"bar"}} );
@@ -152,7 +152,7 @@ describe( "postal.xframe - unit tests", function () {
 		it( "should pass correct arguments to target instance", function() {
       var msg;
       client.sendPing();
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         msg = JSON.parse( fakeTarget.msg );
         expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
       } else {
@@ -188,7 +188,7 @@ describe( "postal.xframe - unit tests", function () {
 		it( "should pass correct arguments to target instance", function() {
       var msg;
       client.sendPong(pingMsg.packingSlip);
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         msg = JSON.parse( fakeTarget.msg );
         expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
       } else {
@@ -230,7 +230,7 @@ describe( "postal.xframe - unit tests", function () {
       var msg;
       client.handshakeComplete = true;
 			client.sendMessage(env);
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         msg = JSON.parse( fakeTarget.msg );
         expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
       } else {
@@ -266,7 +266,7 @@ describe( "postal.xframe - unit tests", function () {
 		it( "should pass correct arguments to target instance", function(){
       var msg;
       client.sendBundle([ slip1, slip2 ]);
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         msg = JSON.parse( fakeTarget.msg );
         expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
       } else {
@@ -311,14 +311,14 @@ describe( "postal.xframe - unit tests", function () {
 		});
 		it( "should serialize the payload to JSON for cross-frame transport", function(){
       var msg;
-      if(postal.fedx.transports.eagerSerialize) {
-        msg = JSON.parse( fakeTarget.msg );
-        expect( Object.prototype.toString.call( wrapped ) ).to.be("[object String]" );
-        expect( regex.test(wrapped) ).to.be( true );
+      if( postal.fedx.transports.xframe.eagerSerialize ) {
+        msg = JSON.parse( wrapped );
+        expect( Object.prototype.toString.call( wrapped ) ).to.be( "[object String]" );
+        expect( regex.test( wrapped ) ).to.be( true );
       } else {
-        msg = fakeTarget.msg;
-        expect( Object.prototype.toString.call( wrapped ) ).to.be("[object Object]" );
-        expect( regex.test(JSON.stringify(wrapped)) ).to.eql( true );
+        msg = wrapped;
+        expect( Object.prototype.toString.call( wrapped ) ).to.be( "[object Object]" );
+        expect( regex.test( JSON.stringify( wrapped ) ) ).to.eql( true );
       }
 		});
 	});
@@ -404,7 +404,7 @@ describe( "postal.xframe - unit tests", function () {
       var msg;
 			client.handshakeComplete = true;
 			postal.fedx.sendMessage( { channel: "federate", topic: "all.the.things",   data: "Booyah!" } );
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         msg = JSON.parse( fakeTarget.msg );
         expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
       } else {
@@ -440,7 +440,7 @@ describe( "postal.xframe - unit tests", function () {
 		it( "should pass correct arguments to target instance", function() {
       var msg;
 			postal.fedx.transports.xframe.signalReady({ target: fakeTarget, origin: "http://fake.origin"});
-      if(postal.fedx.transports.eagerSerialize) {
+      if(postal.fedx.transports.xframe.eagerSerialize) {
         msg = JSON.parse( fakeTarget.msg );
         expect( Object.prototype.toString.call( fakeTarget.msg ) ).to.be( '[object String]' );
       } else {

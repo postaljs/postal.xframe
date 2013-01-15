@@ -1,12 +1,12 @@
-var useEagerSerialize = (function () {
-  var serialize = false;
-  window.addEventListener( "message", function callback ( e ) {
-    serialize = e.data.notAStupidBrowser === true;
-    window.removeEventListener( "message", callback );
-  }, false);
-  window.postMessage( { notAStupidBrowser: true }, window.location.protocol + "//" + window.location.host );
-  return serialize;
-}());
+// THE NEXT FEW LINES ARE BROUGHT TO YOU BY IE. SIGH.
+if(!window.location.origin) {
+  window.location.origin = window.location.protocol + "//" + window.location.host;
+}
+
+// I know, I KNOW. The alternative was to make xframe load ASYNC
+// so I saved you a perf hit by checking the effing UA
+// Elijah Manor threatened to unfriend me because of this...
+var useEagerSerialize = /MSIE [8,9]/.test(navigator.userAgent);
 
 var XFRAME = "xframe",
 	NO_OP = function () {},
