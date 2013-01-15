@@ -3,7 +3,7 @@ if(!window.location.origin) {
   window.location.origin = window.location.protocol + "//" + window.location.host;
 }
 
-// I know, I KNOW. The alternative was was very expensive perf & time-wise
+// I know, I KNOW. The alternative was very expensive perf & time-wise
 // so I saved you a perf hit by checking the stinking UA
 // I sought the opinion of several other devs. We all traveled
 // to the far east to consult with the wisdom of a monk - turns
