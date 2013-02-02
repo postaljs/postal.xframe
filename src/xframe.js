@@ -112,8 +112,15 @@ var XFRAME = "xframe",
 					remote.sendPing( callback );
 				}
 			}, this );
-		}
+		},
+  		addEventListerner : function (obj, eventName, handler, bubble) {
+  		    if ("addEventListener" in obj) { // W3C
+  		      obj.addEventListener(eventName, handler, bubble);
+  		    } else { // IE8
+  		      obj.attachEvent("on" + eventName, handler);
+  		    }
+  		  }
 	};
 
 _.bindAll( plugin );
-window.addEventListener( "message", plugin.routeMessage, false );
+plugin.addEventListerner(window, "message", plugin.routeMessage, false);
