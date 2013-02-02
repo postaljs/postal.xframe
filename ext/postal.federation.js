@@ -95,6 +95,14 @@
   				envelope : env
   			}
   		},
+      disconnect: function () {
+        return {
+          type : 'federation.disconnect',
+          instanceId : postal.instanceId(),
+          timeStamp : new Date(),
+          envelope : {}
+        }
+      },
   		bundle : function ( packingSlips ) {
   			return {
   				type : 'federation.bundle',
@@ -141,6 +149,9 @@
   				}
   			} );
   		},
+      "federation.disconnect" : function ( data ) {
+        postal.fedx.clients = _.without(postal.fedx.clients, data.source.instanceId);
+      },
   		"federation.message" : function ( data ) {
   			var env = data.packingSlip.envelope;
   			if ( _matchesFilter( env.channel, env.topic, 'in' ) ) {
@@ -189,7 +200,8 @@
   FederationClient.prototype.sendBundle = function ( slips ) {
   	this.send( postal.fedx.getPackingSlip( 'bundle', slips ) );
   };
-  
+
+  // remote send message
   FederationClient.prototype.sendMessage = function ( envelope ) {
   	if ( !this.handshakeComplete ) {
   		return;
@@ -201,7 +213,9 @@
   	       (env.knownIds && !_.include( env.knownIds, this.instanceId )))
   		) {
   		env.knownIds = (env.knownIds || []).concat( _.without( postal.fedx.clients, this.instanceId ) );
-  		this.send( postal.fedx.getPackingSlip( 'message', env ) );
+      // overriden in transport
+      // transport.send
+      this.send( postal.fedx.getPackingSlip( 'message', env ) );
   	}
   };
   
@@ -214,6 +228,8 @@
   		} );
   	}
   };
+
+  FederationClient.prototype.disconnect = NO_OP;
   
   FederationClient.prototype.shouldProcess = function () {
   	return true;
@@ -292,7 +308,8 @@
   			throw new Error( "postal.federation does not have a message handler for '" + data.packingSlip.type + "'." );
   		}
   	},
-  
+
+    // federate message
   	sendMessage : function ( envelope ) {
   		if ( !_ready ) {
   			_outboundQueue.push( arguments );
@@ -302,6 +319,12 @@
   			transport.sendMessage( envelope );
   		} );
   	},
+
+    disconnect: function ( id ) {
+  		_.each( this.transports, function ( transport ) {
+  			transport.disconnect( this.getPackingSlip( 'disconnect' ) );  
+  		}, this );
+    },
   
   	/*
   	 signalReady( "transportName", callback );

@@ -30,7 +30,11 @@ var XFRAME = "xframe",
 			if ( this.shouldProcess() ) {
 				this.target.postMessage( postal.fedx.transports[XFRAME].wrapForTransport( packingSlip ), this.options.origin );
 			}
-		}
+    },
+    disconnect : function ( packingSlip ) {
+      this.send( packingSlip );
+    }
+    
 	} ),
 	plugin = postal.fedx.transports[XFRAME] = {
     eagerSerialize : useEagerSerialize,
@@ -40,7 +44,9 @@ var XFRAME = "xframe",
 				_config = _.defaults( cfg, _defaults );
 			}
 			return _config;
-		},
+    },
+
+    //find all iFrames and the parent window if in an iframe
 		getTargets : function () {
 			var targets = _.map( document.getElementsByTagName( 'iframe' ), function ( i ) {
 				var urlHack = document.createElement( 'a' );
@@ -78,23 +84,39 @@ var XFRAME = "xframe",
                               return msgData;
                             },
 		routeMessage : function ( event ) {
+
+      // needs to check for disconnect
+
 			var parsed = this.unwrapFromTransport( event.data );
 			if ( parsed.postal ) {
-				var target = _.find( this.remotes, function ( x ) {
+				var remote = _.find( this.remotes, function ( x ) {
 					return x.target === event.source;
 				} );
-				if ( !target ) {
-					target = new XFrameClient( event.source, { origin : event.origin }, parsed.packingSlip.instanceId );
-					this.remotes.push( target );
+
+        if( parsed.packingSlip.type === "federation.disconnect" ) {
+           this.remotes = _.without(this.remotes, remote);
+           return;
+        }
+
+				if ( !remote ) {
+					remote = new XFrameClient( event.source, { origin : event.origin }, parsed.packingSlip.instanceId );
+					this.remotes.push( remote );
 				}
-				target.onMessage( parsed.packingSlip );
+				remote.onMessage( parsed.packingSlip );
 			}
 		},
 		sendMessage : function ( envelope ) {
-			_.each( this.remotes, function ( target ) {
-				target.sendMessage( envelope );
+			_.each( this.remotes, function ( remote ) {
+				remote.sendMessage( envelope );
 			} )
 		},
+    disconnect: function( envelope ) {
+			_.each( this.remotes, function ( remote ) {
+				remote.disconnect( envelope );
+      } );
+
+      this.remotes = [];
+    },
 		signalReady : function ( targets, callback ) {
 			targets = _.isArray( targets ) ? targets : [ targets ];
 			targets = targets.length ? targets : this.getTargets();

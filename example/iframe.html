@@ -50,6 +50,9 @@
                     data: "This message will appear in the parent"
                 });
             });
+            $("#msg3").on('click', function(){
+                postal.fedx.disconnect();
+            });
 
             postal.fedx.signalReady();
         });
@@ -58,6 +61,7 @@
 <body>
 <div>
     <input type="button" value="Send Msg" id="msg2">
+    <input type="button" value="Disconnect" id="msg3">
 </div>
 <div id="msgs"></div>
 </body>
