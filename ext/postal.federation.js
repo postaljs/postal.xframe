@@ -2,7 +2,7 @@
  postal.federation
  Copyright (C) 2012 - Jim Cowart (http://freshbrewedcode.com/jimcowart)
  License: Dual licensed MIT & GPL v2.0
- Version 0.2.0
+ Version 0.2.1
  */
 (function ( root, factory ) {
   if ( typeof module === "object" && module.exports ) {
@@ -155,7 +155,7 @@
   		}
   	},
   	_matchesFilter = function ( channel, topic, direction ) {
-  		var channelPresent = postal.fedx.filters[direction].hasOwnProperty( channel );
+  	    var channelPresent = Object.prototype.hasOwnProperty.call(postal.fedx.filters[direction], channel);
   		var topicMatch = (channelPresent && _.any( postal.fedx.filters[direction][channel], function ( binding ) {
   			return postal.configuration.resolver.compare( binding, topic );
   		} ));
@@ -232,8 +232,9 @@
   	clients: [],
   
   	transports : {},
-  
-  	filters : { in : {}, out : {} },
+  	
+  	// in is a reserved word (IE 8)
+  	filters : { "in" : {}, "out" : {} },
   
   	addFilter : function ( filters ) {
   		filters = _.isArray( filters ) ? filters : [ filters ];
@@ -276,7 +277,7 @@
   	},
   
   	getPackingSlip : function ( type, env ) {
-  		if ( _packingSlips.hasOwnProperty( type ) ) {
+  		if (Object.prototype.hasOwnProperty.call(_packingSlips, type)) {
   			return _packingSlips[type].apply( this, Array.prototype.slice.call( arguments, 1 ) );
   		}
   	},
@@ -286,7 +287,7 @@
   			_inboundQueue.push( data );
   			return;
   		}
-  		if ( _handle.hasOwnProperty( data.packingSlip.type ) ) {
+  		if (Object.prototype.hasOwnProperty.call(_handle, data.packingSlip.type)) {
   			_handle[data.packingSlip.type]( data );
   		} else {
   			throw new Error( "postal.federation does not have a message handler for '" + data.packingSlip.type + "'." );
