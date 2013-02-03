@@ -5,5 +5,5 @@
 	"httpPaths" : {
 		"/" : "./"
 	},
-	"dependencies" : [ "anvil.http", "anvil.uglify" ]
+	"dependencies" : [ "anvil.uglify" ]
 }
