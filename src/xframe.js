@@ -110,10 +110,20 @@ var XFRAME = "xframe",
 				remote.sendMessage( envelope );
 			} )
 		},
-    disconnect: function( envelope ) {
-			_.each( this.remotes, function ( remote ) {
-				remote.disconnect( envelope );
-      } );
+    disconnect: function( targets, envelope, callback ) {
+			targets = _.isArray( targets ) ? targets : [ targets ];
+			targets = targets.length ? targets : this.getTargets();
+			callback = callback || NO_OP;
+
+			_.each( targets, function ( def ) {
+				if ( def.target ) {
+					def.origin = def.origin || _config.defaultOriginUrl;
+					var remote = _.find( this.remotes, function ( x ) {
+						return x.target === def.target;
+					} );
+					remote && remote.disconnect( envelope, callback );
+				}
+			}, this );
 
       this.remotes = [];
     },
