@@ -21,6 +21,12 @@ describe( "postal.xframe - unit tests", function () {
 		source : fakeTarget,
 		data   : postal.fedx.transports.xframe.eagerSerialize ? testFederationMessage : JSON.parse(testFederationMessage)
 	};
+	var testFederationDeleteMessage = '{"postal":true,"packingSlip":{"type":"federation.disconnect","timeStamp":"2013-01-12T16:15:23.853Z","envelope":{"channel":"federate","topic":"all.the.things","data":"Booyah!"}}}';
+	var fakeDeleteEvent = {
+		origin : "http://fake.origin",
+		source : fakeTarget,
+		data   : postal.fedx.transports.xframe.eagerSerialize ? testFederationDeleteMessage : JSON.parse(testFederationDeleteMessage)
+	};
 	describe( "When checking configuration", function () {
 		describe( "When using defaults", function () {
 			it( "should return expected default values", function () {
@@ -363,22 +369,36 @@ describe( "postal.xframe - unit tests", function () {
 			postal.fedx.transports.xframe.configure({});
 			postal.fedx.transports.xframe.remotes = [];
 		});
-		it( "route the message to the correct client if it's a postal federation msg", function() {
-			postal.fedx.transports.xframe.routeMessage( fakeEvent );
-			expect( result ).to.eql({
-				"type"      :"federation.message",
-				"timeStamp" :"2013-01-12T16:15:23.853Z",
-				"envelope"  :{
-					"channel" :"federate",
-					"topic"   :"all.the.things",
-					"data"    :"Booyah!"
-				}
-			});
-		});
-		it( "should not route a non-postal federation message", function(){
-			postal.fedx.transports.xframe.routeMessage( { origin: "http://fake.origin", source: fakeTarget, data: '{"foo":"bar", "baz":"bacon"}' } );
-			expect( typeof result === "undefined" ).to.be( true );
-		});
+
+    describe("sending a normal message", function () {
+      it( "route the message to the correct client if it's a postal federation msg", function() {
+        postal.fedx.transports.xframe.routeMessage( fakeEvent );
+        expect( result ).to.eql({
+          "type"      :"federation.message",
+          "timeStamp" :"2013-01-12T16:15:23.853Z",
+          "envelope"  :{
+            "channel" :"federate",
+            "topic"   :"all.the.things",
+            "data"    :"Booyah!"
+          }
+        });
+      });
+      it( "should not route a non-postal federation message", function(){
+        postal.fedx.transports.xframe.routeMessage( { origin: "http://fake.origin", source: fakeTarget, data: '{"foo":"bar", "baz":"bacon"}' } );
+        expect( typeof result === "undefined" ).to.be( true );
+      });
+
+    });
+    describe("sending a delete message", function () {
+
+      it("should remove the remote from the remotes array", function () {
+        postal.fedx.transports.xframe.routeMessage( fakeDeleteEvent );
+        expect(postal.fedx.transports.xframe.remotes.length).to.be(0);
+      
+      })
+
+    });
+
 	});
 
 	describe( "When calling sendMessage", function() {
@@ -424,6 +444,58 @@ describe( "postal.xframe - unit tests", function () {
 		});
 	});
 
+	describe( "When calling the client disconnect", function () {
+		var client, sendCalled;
+		beforeEach( function () {
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+      client.send = function() {
+        sendCalled = true;
+      }
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+			postal.fedx.transports.xframe.remotes = [ client ];
+			});
+		afterEach( function () {
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.transports.xframe.remotes = [];
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+
+    it("should delegate to send on the client", function () {
+      client.disconnect();
+			expect( sendCalled === true ).to.be( true );
+    })
+
+	} );
+
+	describe( "When calling the transport disconnect", function () {
+		var client, disconnectCalled;
+		beforeEach( function () {
+			client = new XFrameClient( fakeTarget, { origin: "http://fake.origin" }, "123456" );
+      client.disconnect = function() {
+        disconnectCalled = true;
+      }
+			postal.fedx.transports.xframe.configure({ allowedOrigins: [ "http://fake.origin" ] });
+			postal.fedx.transports.xframe.remotes = [ client ];
+			});
+		afterEach( function () {
+			postal.fedx.transports.xframe.configure({});
+			postal.fedx.transports.xframe.remotes = [];
+			delete fakeTarget.targetUrl;
+			delete fakeTarget.msg;
+		});
+
+    it("should call disconnect on each remote", function () {
+      postal.fedx.transports.xframe.disconnect();
+			expect( disconnectCalled === true ).to.be( true );
+    })
+
+    it("should clear the remotes array", function () {
+      postal.fedx.transports.xframe.disconnect();
+      expect(postal.fedx.transports.xframe.remotes.length).to.be(0);
+    })
+
+	} );
 	describe( "When calling signalReady", function () {
 		var client;
 		beforeEach( function () {
