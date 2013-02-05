@@ -95,6 +95,14 @@
   				envelope : env
   			}
   		},
+      disconnect: function () {
+        return {
+          type : 'federation.disconnect',
+          instanceId : postal.instanceId(),
+          timeStamp : new Date(),
+          envelope : {}
+        }
+      },
   		bundle : function ( packingSlips ) {
   			return {
   				type : 'federation.bundle',
@@ -141,6 +149,9 @@
   				}
   			} );
   		},
+      "federation.disconnect" : function ( data ) {
+        postal.fedx.clients = _.without(postal.fedx.clients, data.source.instanceId);
+      },
   		"federation.message" : function ( data ) {
   			var env = data.packingSlip.envelope;
   			if ( _matchesFilter( env.channel, env.topic, 'in' ) ) {
@@ -189,7 +200,8 @@
   FederationClient.prototype.sendBundle = function ( slips ) {
   	this.send( postal.fedx.getPackingSlip( 'bundle', slips ) );
   };
-  
+
+  // remote send message
   FederationClient.prototype.sendMessage = function ( envelope ) {
   	if ( !this.handshakeComplete ) {
   		return;
@@ -201,7 +213,9 @@
   	       (env.knownIds && !_.include( env.knownIds, this.instanceId )))
   		) {
   		env.knownIds = (env.knownIds || []).concat( _.without( postal.fedx.clients, this.instanceId ) );
-  		this.send( postal.fedx.getPackingSlip( 'message', env ) );
+      // overriden in transport
+      // transport.send
+      this.send( postal.fedx.getPackingSlip( 'message', env ) );
   	}
   };
   
@@ -214,6 +228,8 @@
   		} );
   	}
   };
+
+  FederationClient.prototype.disconnect = NO_OP;
   
   FederationClient.prototype.shouldProcess = function () {
   	return true;
@@ -293,7 +309,8 @@
   			throw new Error( "postal.federation does not have a message handler for '" + data.packingSlip.type + "'." );
   		}
   	},
-  
+
+    // federate message
   	sendMessage : function ( envelope ) {
   		if ( !_ready ) {
   			_outboundQueue.push( arguments );
@@ -303,76 +320,100 @@
   			transport.sendMessage( envelope );
   		} );
   	},
-  
-  	/*
-  	 signalReady( "transportName", callback );
-  	 signalReady( { transportNameA: targetsForA, transportNameB: targetsForB, transportC: true }, callback);
-  	 */
-  	signalReady : function ( transport, callback ) {
-  		if ( !_ready ) {
-  			_signalQueue.push( arguments );
-  			return;
-  		}
-  		switch ( arguments.length ) {
-  			case 0:
-  				transport = _.reduce( this.transports, function ( memo, transport, name ) {
-  					memo[name] = true;
-  					return memo;
-  				}, {} );
-  				break;
-  			case 1:
-  				if ( typeof transport === 'function' ) {
-  					callback = transport;
-  					transport = _.reduce( this.transports, function ( memo, transport, name ) {
-  						memo[name] = true;
-  						return memo;
-  					}, {} );
-  				}
-  				break;
-  		}
-  		if ( Object.prototype.toString.call( transport ) === '[object String]' ) {
-  			this.transports[transport].signalReady( [], callback );
-  		} else {
-  			_.each( transport || this.transports, function ( targets, name ) {
-  				targets = Object.prototype.toString.call( targets ) === "[object Boolean]" ? [] : targets;
-  				this.transports[name].signalReady( targets, callback );
-  			}, this );
-  		}
-  	}
-  
+
+    disconnect : function ( transport, callback ) {
+      switch ( arguments.length ) {
+        case 0:
+          transport = this._getTransports();
+        break;
+        case 1:
+        if ( typeof transport === 'function' ) {
+          callback = transport;
+          transport = this._getTransports();
+        }
+        break;
+      }
+      if ( Object.prototype.toString.call( transport ) === '[object String]' ) {
+        this.transports[transport].disconnect([], this.getPackingSlip( 'disconnect' ), callback );  
+      } else {
+        _.each( transport || this.transports, function ( targets, name ) {
+          targets = Object.prototype.toString.call( targets ) === "[object Boolean]" ? [] : targets;
+          this.transports[name].disconnect(targets, this.getPackingSlip( 'disconnect' ), callback );  
+        }, this );
+
+      }
+    },
+
+    _getTransports : function ( ) {
+      return _.reduce( this.transports, function ( memo, transport, name ) {
+        memo[name] = true;
+        return memo;
+      }, {} );     
+    },
+
+    /*
+     signalReady( "transportName", callback );
+     signalReady( { transportNameA: targetsForA, transportNameB: targetsForB, transportC: true }, callback);
+     */
+    signalReady : function ( transport, callback ) {
+      if ( !_ready ) {
+        _signalQueue.push( arguments );
+        return;
+      }
+      switch ( arguments.length ) {
+        case 0:
+        transport = this._getTransports();
+        break;
+        case 1:
+        if ( typeof transport === 'function' ) {
+          callback = transport;
+          transport = this._getTransports();
+        }
+        break;
+      }
+      if ( Object.prototype.toString.call( transport ) === '[object String]' ) {
+        this.transports[transport].signalReady( [], callback );
+      } else {
+        _.each( transport || this.transports, function ( targets, name ) {
+          targets = Object.prototype.toString.call( targets ) === "[object Boolean]" ? [] : targets;
+          this.transports[name].signalReady( targets, callback );
+        }, this );
+      }
+    }
+
   }, postal.fedx );
-  
+
   postal.addWireTap( function ( data, envelope ) {
-  	if ( postal.fedx.canSendRemote( envelope.channel, envelope.topic ) ) {
-  		postal.fedx.sendMessage( envelope );
-  	}
+    if ( postal.fedx.canSendRemote( envelope.channel, envelope.topic ) ) {
+      postal.fedx.sendMessage( envelope );
+    }
   } );
-  
+
   postal.subscribe( {
-  	channel : postal.configuration.SYSTEM_CHANNEL,
-  	topic : "instanceId.changed",
-  	callback : function () {
-  		_ready = true;
-  		while ( _signalQueue.length ) {
-  			(function ( args ) {
-  				postal.fedx.signalReady.apply( this, args );
-  			}( _signalQueue.shift() ));
-  		}
-  		while ( _outboundQueue.length ) {
-  			(function ( args ) {
-  				postal.fedx.send.apply( this, args );
-  			}( _outboundQueue.shift() ));
-  		}
-  		while ( _inboundQueue.length ) {
-  			(function ( msg ) {
-  				postal.fedx.onFederatedMsg.call( this, msg );
-  			}( _inboundQueue.shift() ));
-  		}
-  	}
+    channel : postal.configuration.SYSTEM_CHANNEL,
+    topic : "instanceId.changed",
+    callback : function () {
+      _ready = true;
+      while ( _signalQueue.length ) {
+        (function ( args ) {
+          postal.fedx.signalReady.apply( this, args );
+        }( _signalQueue.shift() ));
+      }
+      while ( _outboundQueue.length ) {
+        (function ( args ) {
+          postal.fedx.send.apply( this, args );
+        }( _outboundQueue.shift() ));
+      }
+      while ( _inboundQueue.length ) {
+        (function ( msg ) {
+          postal.fedx.onFederatedMsg.call( this, msg );
+        }( _inboundQueue.shift() ));
+      }
+    }
   } );
-  
+
   if ( postal.instanceId() !== undefined ) {
-  	_ready = true;
+    _ready = true;
   }
 
   return postal;

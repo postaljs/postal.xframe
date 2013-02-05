@@ -4,7 +4,7 @@ if(!window.location.origin) {
 }
 
 // I know, I KNOW. The alternative was very expensive perf & time-wise
-// so I saved you a perf hit by checking the stinking UA
+// so I saved you a perf hit by checking the stinking UA.
 // I sought the opinion of several other devs. We all traveled
 // to the far east to consult with the wisdom of a monk - turns
 // out he didn't know JavaScript, and our passports were stolen on the
@@ -30,17 +30,22 @@ var XFRAME = "xframe",
 			if ( this.shouldProcess() ) {
 				this.target.postMessage( postal.fedx.transports[XFRAME].wrapForTransport( packingSlip ), this.options.origin );
 			}
-		}
+	    },
+	    disconnect : function ( packingSlip ) {
+	      this.send( packingSlip );
+	    }
+    
 	} ),
 	plugin = postal.fedx.transports[XFRAME] = {
-    eagerSerialize : useEagerSerialize,
+	    eagerSerialize : useEagerSerialize,
 		XFrameClient : XFrameClient,
 		configure : function ( cfg ) {
 			if ( cfg ) {
 				_config = _.defaults( cfg, _defaults );
 			}
 			return _config;
-		},
+	    },
+		//find all iFrames and the parent window if in an iframe
 		getTargets : function () {
 			var targets = _.map( document.getElementsByTagName( 'iframe' ), function ( i ) {
 				var urlHack = document.createElement( 'a' );
@@ -78,23 +83,47 @@ var XFRAME = "xframe",
                               return msgData;
                             },
 		routeMessage : function ( event ) {
-			var parsed = this.unwrapFromTransport( event.data );
+		// needs to check for disconnect
+		var parsed = this.unwrapFromTransport( event.data );
 			if ( parsed.postal ) {
-				var target = _.find( this.remotes, function ( x ) {
+				var remote = _.find( this.remotes, function ( x ) {
 					return x.target === event.source;
 				} );
-				if ( !target ) {
-					target = new XFrameClient( event.source, { origin : event.origin }, parsed.packingSlip.instanceId );
-					this.remotes.push( target );
+
+		        if( parsed.packingSlip.type === "federation.disconnect" ) {
+		           this.remotes = _.without(this.remotes, remote);
+		           return;
+		        }
+
+				if ( !remote ) {
+					remote = new XFrameClient( event.source, { origin : event.origin }, parsed.packingSlip.instanceId );
+					this.remotes.push( remote );
 				}
-				target.onMessage( parsed.packingSlip );
+				remote.onMessage( parsed.packingSlip );
 			}
 		},
 		sendMessage : function ( envelope ) {
-			_.each( this.remotes, function ( target ) {
-				target.sendMessage( envelope );
+			_.each( this.remotes, function ( remote ) {
+				remote.sendMessage( envelope );
 			} )
 		},
+	    disconnect: function( targets, envelope, callback ) {
+			targets = targets ? (_.isArray( targets ) ? targets : [ targets ]) : [];
+			targets = targets.length ? targets : this.remotes;
+			callback = callback || NO_OP;
+
+			_.each( targets, function ( def ) {
+				if ( def.target ) {
+					def.origin = def.origin || _config.defaultOriginUrl;
+					var remote = _.find( this.remotes, function ( x ) {
+						return x.target === def.target;
+					} );
+					remote && remote.disconnect( envelope, callback );
+				}
+			}, this );
+
+	      this.remotes = [];
+	    },
 		signalReady : function ( targets, callback ) {
 			targets = _.isArray( targets ) ? targets : [ targets ];
 			targets = targets.length ? targets : this.getTargets();
@@ -113,7 +142,7 @@ var XFRAME = "xframe",
 				}
 			}, this );
 		},
-  		addEventListerner : function (obj, eventName, handler, bubble) {
+  		addEventListener : function (obj, eventName, handler, bubble) {
   		    if ("addEventListener" in obj) { // W3C
   		      obj.addEventListener(eventName, handler, bubble);
   		    } else { // IE8
@@ -123,4 +152,4 @@ var XFRAME = "xframe",
 	};
 
 _.bindAll( plugin );
-plugin.addEventListerner(window, "message", plugin.routeMessage, false);
+plugin.addEventListener(window, "message", plugin.routeMessage, false);
