@@ -2,7 +2,7 @@
  postal.federation
  Copyright (C) 2012 - Jim Cowart (http://freshbrewedcode.com/jimcowart)
  License: Dual licensed MIT & GPL v2.0
- Version 0.2.1
+ Version 0.2.2
  */
 (function ( root, factory ) {
   if ( typeof module === "object" && module.exports ) {

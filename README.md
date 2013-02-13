@@ -1,6 +1,6 @@
 # postal.xframe
 
-## Version 0.2.1	 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+## Version 0.2.3 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
 
 ## What is it?
 postal.xframe is a [postal.federation](https://github.com/postaljs/postal.federation) plugin - enabling you to 'federate' instances of [postal](https://github.com/postaljs/postal.js) across iframe/window boundaries in the browser.
@@ -82,6 +82,23 @@ var subscription = postal.subscribe({
 		// do stuff with data or envelope
 	}
 });
+
+// When you're ready to disconnect you can do it one of several ways
+// providing no arguments disconnects you from ALL remotes and signals to
+// them to also remove their client proxies back to you:
+postal.fedx.disconnect();
+
+// You can provide the raw "target" (i.e. - a content window)
+postal.fedx.disconnect({ target: document.getElementById("iframe1").contentWindow });
+
+// You can provide the remote instanceId
+postal.fedx.disconnect({ instanceId: "iframe2" });
+
+// You can pass doNotNotify: true to prevent the signalling of the remote
+// instance to remove their client proxy to you. This could be helpful if
+// you are disconnecting from an iframe that's already gone, for example
+postal.fedx.disconnect({ instanceId: "iframe2", doNotNotify: true });
+
 
 ```
 

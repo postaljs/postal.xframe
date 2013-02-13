@@ -30,17 +30,17 @@ $( function () {
 	} );
 
 	// disconnecting via passing the content window as a target
-	$("#disconnect1").on("click", function(){
-		postal.fedx.disconnect({
-			target: document.getElementById("iframe1" ).contentWindow
-		});
-	});
+	$( "#disconnect1" ).on( "click", function () {
+		postal.fedx.disconnect( {
+			target : document.getElementById( "iframe1" ).contentWindow
+		} );
+	} );
 
 	// disconnecting via passing the instanceId
-	$("#disconnect2").on("click", function(){
-		postal.fedx.disconnect({
-			instanceId: "iframe2"
-		});
-	});
+	$( "#disconnect2" ).on( "click", function () {
+		postal.fedx.disconnect( {
+			instanceId : "iframe2"
+		} );
+	} );
 
 } );
