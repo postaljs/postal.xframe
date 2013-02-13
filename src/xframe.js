@@ -4,13 +4,33 @@ if(!window.location.origin) {
 }
 
 // I know, I KNOW. The alternative was very expensive perf & time-wise
-// so I saved you a perf hit by checking the stinking UA.
+// so I saved you a perf hit by checking the stinking UA. Sigh.
 // I sought the opinion of several other devs. We all traveled
 // to the far east to consult with the wisdom of a monk - turns
 // out he didn't know JavaScript, and our passports were stolen on the
 // return trip. We stowed away aboard a freighter headed back to the
 // US and by the time we got back, no one had heard of IE 8 or 9. True story.
 var useEagerSerialize = /MSIE [8,9]/.test(navigator.userAgent);
+
+var _memoRemoteByInstanceId = function(memo, instanceId) {
+	var proxy = _.find(this.remotes, function(x) {
+		return x.instanceId === instanceId;
+	});
+	if(proxy) { memo.push(proxy); }
+	return memo;
+};
+
+var _memoRemoteByTarget = function(memo, tgt) {
+	var proxy = _.find(this.remotes, function(x) {
+		return x.target === tgt;
+	});
+	if(proxy) { memo.push(proxy); }
+	return memo;
+};
+
+var _disconnectClient = function ( client ) {
+	client.disconnect();
+};
 
 var XFRAME = "xframe",
 	NO_OP = function () {},
@@ -21,7 +41,7 @@ var XFRAME = "xframe",
 	},
 	_config = _defaults,
 	XFrameClient = postal.fedx.FederationClient.extend( {
-		transportName : XFRAME,
+		transportName : "xframe",
 		shouldProcess : function () {
 			var hasDomainFilters = !!_config.allowedOrigins.length;
 			return _config.enabled && (this.options.origin === "*" || (hasDomainFilters && _.contains( _config.allowedOrigins, this.options.origin ) || !hasDomainFilters ));
@@ -30,11 +50,7 @@ var XFRAME = "xframe",
 			if ( this.shouldProcess() ) {
 				this.target.postMessage( postal.fedx.transports[XFRAME].wrapForTransport( packingSlip ), this.options.origin );
 			}
-	    },
-	    disconnect : function ( packingSlip ) {
-	      this.send( packingSlip );
 	    }
-    
 	} ),
 	plugin = postal.fedx.transports[XFRAME] = {
 	    eagerSerialize : useEagerSerialize,
@@ -89,12 +105,6 @@ var XFRAME = "xframe",
 				var remote = _.find( this.remotes, function ( x ) {
 					return x.target === event.source;
 				} );
-
-		        if( parsed.packingSlip.type === "federation.disconnect" ) {
-		           this.remotes = _.without(this.remotes, remote);
-		           return;
-		        }
-
 				if ( !remote ) {
 					remote = new XFrameClient( event.source, { origin : event.origin }, parsed.packingSlip.instanceId );
 					this.remotes.push( remote );
@@ -105,24 +115,23 @@ var XFRAME = "xframe",
 		sendMessage : function ( envelope ) {
 			_.each( this.remotes, function ( remote ) {
 				remote.sendMessage( envelope );
-			} )
+			} );
 		},
-	    disconnect: function( targets, envelope, callback ) {
-			targets = targets ? (_.isArray( targets ) ? targets : [ targets ]) : [];
-			targets = targets.length ? targets : this.remotes;
-			callback = callback || NO_OP;
-
-			_.each( targets, function ( def ) {
-				if ( def.target ) {
-					def.origin = def.origin || _config.defaultOriginUrl;
-					var remote = _.find( this.remotes, function ( x ) {
-						return x.target === def.target;
-					} );
-					remote && remote.disconnect( envelope, callback );
-				}
-			}, this );
-
-	      this.remotes = [];
+	    disconnect: function( options ) {
+		    options = options || {};
+			var clients = options.instanceId ?
+			              // an instanceId value or array was provided, let's get the client proxy instances for the id(s)
+			              _.reduce(_.isArray( options.instanceId ) ? options.instanceId : [ options.instanceId ], _memoRemoteByInstanceId, [], this) :
+			              // Ok so we don't have instanceId(s), let's try target(s)
+			              options.target ?
+			                // Ok, so we have a targets array, we need to iterate over it and get a list of the proxy/client instances
+							_.reduce(_.isArray( options.target ) ? options.target : [ options.target ], _memoRemoteByTarget, [], this) :
+							// aww, heck - we don't have instanceId(s) or target(s), so it's ALL THE REMOTES
+							this.remotes;
+			if(!options.doNotNotify) {
+				_.each( clients, _disconnectClient, this );
+			}
+			this.remotes = _.without.apply(null, [ this.remotes ].concat(clients));
 	    },
 		signalReady : function ( targets, callback ) {
 			targets = _.isArray( targets ) ? targets : [ targets ];
