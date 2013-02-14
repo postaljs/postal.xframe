@@ -2,6 +2,31 @@
 <html>
 <head>
     <title></title>
+    <script src="/ext/underscore.js"></script>
+    <script type="text/javascript" src="../ext/postal.js"></script>
+    <script type="text/javascript" src="../ext/riveter.js"></script>
+    <script type="text/javascript" src="../ext/postal.federation.js"></script>
+    <script type="text/javascript" src="../lib/postal.xframe.js"></script>
+    <script>
+        postal.instanceId("testIframe");
+        postal.fedx.addFilter([
+            { channel: 'test-inbound', topic: '#', direction: 'in'  },
+            { channel: 'test-outbound', topic: '#', direction: 'out' }
+        ]);
+        postal.subscribe({
+            channel: "test-inbound",
+            topic: "#",
+            callback: function(d, e) {
+                setTimeout(function(){
+                    postal.publish({
+                        channel: e.replyTo.channel,
+                        topic  : e.replyTo.topic,
+                        data   : d
+                    });
+                }, 0);
+            }
+        });
+    </script>
 </head>
 <body>
 

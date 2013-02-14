@@ -499,6 +499,7 @@ describe( "postal.xframe - unit tests", function () {
 		})
 
 	} );
+
 	describe( "When calling signalReady", function () {
 		var client;
 		beforeEach( function () {
@@ -535,4 +536,40 @@ describe( "postal.xframe - unit tests", function () {
 			expect( fakeTarget.targetUrl ).to.be( undefined );
 		} );
 	} );
-} );
+});
+
+describe("postal.xframe - integration tests", function(){
+	before(function(done){
+		postal.instanceId("Parent");
+		postal.fedx.addFilter([
+			{ channel: 'test-inbound',  topic: '#', direction: 'out' },
+			{ channel: 'test-outbound', topic: '#', direction: 'in'  }
+		]);
+		postal.fedx.signalReady({ xframe: { target: document.getElementById("testIframe").contentWindow } }, function() {
+			done();
+		});
+	});
+	describe("when sending a message to the remote iframe", function(){
+		it("should successfully send and get a response", function(done){
+			var topic = postal.utils.createUUID();
+			var data = postal.utils.createUUID();
+			postal.subscribe({
+				channel  : "test-outbound",
+				topic    : topic,
+				callback : function(d, e) {
+					expect(d).to.be(data);
+					done();
+				}
+			});
+			postal.publish({
+				channel : "test-inbound",
+				topic   : topic,
+				data    : data,
+				replyTo : {
+					channel: "test-outbound",
+					topic  : topic
+				}
+			});
+		});
+	});
+});
