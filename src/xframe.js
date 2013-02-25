@@ -29,6 +29,10 @@ var _disconnectClient = function ( client ) {
 	client.disconnect();
 };
 
+var _envIsWorker = (typeof window === "undefined") && postMessage && location;
+
+var _workers = [];
+
 var XFRAME = "xframe",
 	NO_OP = function () {},
 	_defaults = {
@@ -37,17 +41,38 @@ var XFRAME = "xframe",
 		defaultOriginUrl : "*"
 	},
 	_config = _defaults,
-	XFrameClient = postal.fedx.FederationClient.extend( {
+	XFrameClient = postal.fedx.FederationClient.extend({
 		transportName : "xframe",
 		shouldProcess : function () {
 			var hasDomainFilters = !!_config.allowedOrigins.length;
-			return _config.enabled && (this.options.origin === "*" || (hasDomainFilters && _.contains( _config.allowedOrigins, this.options.origin ) || !hasDomainFilters ));
+			return _config.enabled &&
+					// another frame/window
+					((this.options.origin === "*" || (hasDomainFilters && _.contains( _config.allowedOrigins, this.options.origin ) || !hasDomainFilters )) ||
+					// worker
+					(this.options.isWorker && _.contains(_workers, this.target)) ||
+					// we are in a worker
+					_envIsWorker);
 		},
 		send : function ( packingSlip ) {
+			var args;
+			var context;
 			if ( this.shouldProcess() ) {
-				this.target.postMessage( postal.fedx.transports[XFRAME].wrapForTransport( packingSlip ), this.options.origin );
+				context = _envIsWorker ? null : this.target;
+				args = [postal.fedx.transports[XFRAME].wrapForTransport( packingSlip )];
+				if(!this.options.isWorker && !_envIsWorker) {
+					args.push(this.options.origin);
+				}
+				this.target.postMessage.apply(context, args);
 			}
 	    }
+	}, {
+		getInstance: function(source, origin, instanceId) {
+			var client = new XFrameClient( source, { origin : origin, isWorker: (typeof Worker !== 'undefined' && source instanceof Worker) }, instanceId );
+			if(client.options.isWorker) {
+				plugin.listenToWorker(client.target);
+			}
+			return client;
+		}
 	} ),
 	plugin = postal.fedx.transports[XFRAME] = {
 	    eagerSerialize : useEagerSerialize,
@@ -59,51 +84,59 @@ var XFRAME = "xframe",
 			return _config;
 	    },
 		//find all iFrames and the parent window if in an iframe
-		getTargets : function () {
-			var targets = _.map( document.getElementsByTagName( 'iframe' ), function ( i ) {
-				var urlHack = document.createElement( 'a' );
-				urlHack.href = i.src;
-				return { target : i.contentWindow, origin : (urlHack.protocol + "//" + urlHack.host) || _config.defaultOriginUrl };
-			} );
-			if ( window.parent && window.parent !== window ) {
-				targets.push( { target : window.parent, origin : "*" } );
-			}
-			return targets;
-		},
+		getTargets : _envIsWorker ?
+					 function() {
+						return [{ target : { postMessage: postMessage } }]; // TODO: look into this...
+					 } :
+					 function () {
+						var targets = _.map( document.getElementsByTagName( 'iframe' ), function ( i ) {
+							var urlHack = document.createElement( 'a' );
+							urlHack.href = i.src;
+							return { target : i.contentWindow, origin : (urlHack.protocol + "//" + urlHack.host) || _config.defaultOriginUrl };
+						} );
+						if ( window.parent && window.parent !== window ) {
+							targets.push( { target : window.parent, origin : "*" } );
+						}
+						return targets.concat(_workers);
+					 },
 		remotes : [],
 		wrapForTransport : useEagerSerialize ?
-                         function ( packingSlip ) {
-                           return JSON.stringify( {
-                             postal : true,
-                             packingSlip : packingSlip
-                           } );
-                         } :
-                         function ( packingSlip ) {
-                           return {
-                             postal : true,
-                             packingSlip : packingSlip
-                           };
-                         },
+							function ( packingSlip ) {
+								return JSON.stringify( {
+									postal : true,
+									packingSlip : packingSlip
+								} );
+							} :
+							function ( packingSlip ) {
+								return {
+									postal : true,
+									packingSlip : packingSlip
+								};
+							},
 		unwrapFromTransport : useEagerSerialize ?
-                            function ( msgData ) {
-                              try {
-                                return JSON.parse( msgData );
-                              } catch ( ex ) {
-                                return {};
-                              }
-                            } :
-                            function ( msgData ) {
-                              return msgData;
-                            },
+								function ( msgData ) {
+									try {
+										return JSON.parse( msgData );
+									} catch ( ex ) {
+										return {};
+									}
+								} :
+								function ( msgData ) {
+									return msgData;
+								},
 		routeMessage : function ( event ) {
-		// needs to check for disconnect
-		var parsed = this.unwrapFromTransport( event.data );
+			// source = remote window or worker?
+			var source = event.source || event.currentTarget;
+			var parsed = this.unwrapFromTransport( event.data );
 			if ( parsed.postal ) {
+				if(postal.instanceId() === "worker") {
+					console.log("parsed: " + JSON.stringify(parsed));
+				}
 				var remote = _.find( this.remotes, function ( x ) {
-					return x.target === event.source;
+					return x.target === source;
 				} );
 				if ( !remote ) {
-					remote = new XFrameClient( event.source, { origin : event.origin }, parsed.packingSlip.instanceId );
+					remote = XFrameClient.getInstance( source, event.origin, parsed.packingSlip.instanceId );
 					this.remotes.push( remote );
 				}
 				remote.onMessage( parsed.packingSlip );
@@ -117,11 +150,11 @@ var XFRAME = "xframe",
 	    disconnect: function( options ) {
 		    options = options || {};
 			var clients = options.instanceId ?
-			              // an instanceId value or array was provided, let's get the client proxy instances for the id(s)
-			              _.reduce(_.isArray( options.instanceId ) ? options.instanceId : [ options.instanceId ], _memoRemoteByInstanceId, [], this) :
-			              // Ok so we don't have instanceId(s), let's try target(s)
-			              options.target ?
-			                // Ok, so we have a targets array, we need to iterate over it and get a list of the proxy/client instances
+							// an instanceId value or array was provided, let's get the client proxy instances for the id(s)
+							_.reduce(_.isArray( options.instanceId ) ? options.instanceId : [ options.instanceId ], _memoRemoteByInstanceId, [], this) :
+							// Ok so we don't have instanceId(s), let's try target(s)
+							options.target ?
+							// Ok, so we have a targets array, we need to iterate over it and get a list of the proxy/client instances
 							_.reduce(_.isArray( options.target ) ? options.target : [ options.target ], _memoRemoteByTarget, [], this) :
 							// aww, heck - we don't have instanceId(s) or target(s), so it's ALL THE REMOTES
 							this.remotes;
@@ -141,21 +174,44 @@ var XFRAME = "xframe",
 						return x.target === def.target;
 					} );
 					if ( !remote ) {
-						remote = new XFrameClient( def.target, { origin : def.origin } );
+						remote = XFrameClient.getInstance( def.target, def.origin );
 						this.remotes.push( remote );
 					}
 					remote.sendPing( callback );
 				}
 			}, this );
 		},
-  		addEventListener : function (obj, eventName, handler, bubble) {
-  		    if ("addEventListener" in obj) { // W3C
-  		      obj.addEventListener(eventName, handler, bubble);
-  		    } else { // IE8
-  		      obj.attachEvent("on" + eventName, handler);
-  		    }
-  		  }
+  		addEventListener : _envIsWorker ?
+							function() {
+								addEventListener("message", plugin.routeMessage)
+							} :
+							function (obj, eventName, handler, bubble) {
+								// in normal browser context
+								if(typeof window !== "undefined") {
+									if ("addEventListener" in obj) { // W3C
+										obj.addEventListener(eventName, handler, bubble);
+									} else { // IE8
+										obj.attachEvent("on" + eventName, handler);
+									}
+								}
+							},
+		listenToWorker : function ( worker ) {
+			if(!_.include(_workers, worker)) {
+				worker.addEventListener( "message", plugin.routeMessage );
+				_workers.push( worker );
+			}
+		},
+		stopListeningToWorker : function ( worker ) {
+			if(worker) {
+				worker.removeEventListener( "message", plugin.routeMessage );
+				_workers = _.without(_workers, worker);
+			} else {
+				while(_workers.length) {
+					_workers.pop().removeEventListener( "message", plugin.routeMessage );
+				}
+			}
+		}
 	};
 
 _.bindAll( plugin );
-plugin.addEventListener(window, "message", plugin.routeMessage, false);
+plugin.addEventListener(this, "message", plugin.routeMessage, false);

@@ -12,9 +12,10 @@
     <script type="text/javascript">
         postal.instanceId("iframe2");
         postal.fedx.addFilter([
-            { channel: 'postal',  topic: '#', direction: 'in'  },
-            { channel: 'iframez', topic: '#', direction: 'in'  },
-            { channel: 'parentz', topic: '#', direction: 'out' }
+            { channel: 'postal',    topic: '#', direction: 'in'  },
+            { channel: 'iframez',   topic: '#', direction: 'in'  },
+            { channel: 'parentz',   topic: '#', direction: 'out' },
+            { channel: 'webworker', topic: '#', direction: 'in'  }
         ]);
         postal.addWireTap(function(d, e) {
             console.log("ID: " + postal.instanceId() + " - " + JSON.stringify(e, null, 4));
@@ -23,9 +24,21 @@
             channel: "iframez",
             topic: "#",
             callback: function(d, e) {
-                $("#msgs").append("<div><pre>" + JSON.stringify(e, null, 4) + "</pre></div>");
+                if( e.topic === "clear") {
+                    $("#msgs").html("");
+                } else {
+                    $("#msgs").append("<div><pre>" + JSON.stringify(e, null, 4) + "</pre></div>");
+                }
             }
         });
+
+        postal.subscribe( {
+            channel : "webworker",
+            topic : "#",
+            callback : function ( d, e ) {
+                $( "#msgs" ).append( "<div><pre>" + JSON.stringify( e, null, 4 ) + "</pre></div>" );
+            }
+        } );
 
         $(function() {
 
