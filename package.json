@@ -18,6 +18,16 @@
 	        "name" : "Jose Badeau",
 	        "email" : "jose.badeau@gmail.com",
 	        "url" : "https://github.com/jbadeau"
+        },
+        {
+	        "name" : "Ryan Rauh",
+	        "email" : "rauh.ryan@gmail.com",
+	        "url" : "http://rauhryan.github.com"
+        },
+        {
+	        "name" : "Dru Sellers",
+	        "email" : "dru@drusellers.com",
+	        "url" : "http://drusellers.com"
         }
     ],
 	"keywords" : [
