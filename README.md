@@ -1,12 +1,12 @@
 # postal.xframe
 
-## Version 0.2.3 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+## Version 0.2.4 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
 
 ## What is it?
-postal.xframe is a [postal.federation](https://github.com/postaljs/postal.federation) plugin - enabling you to 'federate' instances of [postal](https://github.com/postaljs/postal.js) across iframe/window boundaries in the browser.
+postal.xframe is a [postal.federation](https://github.com/postaljs/postal.federation) plugin - enabling you to 'federate' instances of [postal](https://github.com/postaljs/postal.js) across iframe/window boundaries - as well as **web workers** - in the browser.
 
 ## Why would I use it?
-If you've ever had to send messages between a parent window and an iframe (or between sibling iframes), you know how frustratingly complex things can become. While most newer browsers support `window.postMessage` - it hardly makes a dent in the kind of infrastructure necessary to transparently publish and subscribe across/between windows.  postal.xframe bridges two or more instances of postal so that they can share messages. For example, if you have postal in the parent window, as well as in an iframe (and have included postal.federation and postal.xframe), you can tell the two instances of postal to federate, enabling messages that get published in the parent window to be pushed down to the iframe and published *as if they were locally published* and vice versa. This enables you to write your components to worry only about handling messages - and the infrastructure concerns of where they originate, how they get there, etc., are already taken care of by postal.xframe.
+If you've ever had to send messages between a parent window and an iframe (or between sibling iframes), you know how frustratingly complex things can become. While most newer browsers support `window.postMessage` - it hardly makes a dent in the kind of infrastructure necessary to transparently publish and subscribe across/between windows.  postal.xframe bridges two or more instances of postal so that they can share messages. For example, if you have postal in the parent window, as well as in an iframe (and have included postal.federation and postal.xframe), you can tell the two instances of postal to federate, enabling messages that get published in the parent window to be pushed down to the iframe and published *as if they were locally published* and vice versa. This enables you to write your components to worry only about handling messages - and the infrastructure concerns of where they originate, how they get there, etc., are already taken care of by postal.xframe. As of v0.2.4, support for federating with postal instances inside a web worker is possible - so if you're using browsers that support workers, and have logic not dependent on being an iframe specifically, you could move it into a worker and simply continue to publish/subscribe normally.
 
 ## How do I use it?
 First, include [postal](), [postal.federation]() and postal.xframe in each window that will be involved. You can initiate federation from either window. Here's an example from a parent window's perspective (it's long because it's heavy with COMMENTS!):
@@ -99,6 +99,17 @@ postal.fedx.disconnect({ instanceId: "iframe2" });
 // you are disconnecting from an iframe that's already gone, for example
 postal.fedx.disconnect({ instanceId: "iframe2", doNotNotify: true });
 
+// What about web workers?!
+// first, get a worker
+var worker = new Worker("worker.js");
+
+// you have two options, call signalReady and pass the worker
+postal.fedx.signalReady({ xframe: { target: worker }});
+
+// OR - if you're going to wait for the worker to signalReady,
+// you need to at least be listening to the worker's messages:
+// (this happens automatically if you use the signalReady approach)
+postal.fedx.transports.xframe.listenToWorker( worker );
 
 ```
 
