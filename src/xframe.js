@@ -1,7 +1,4 @@
-// THE NEXT FEW LINES ARE BROUGHT TO YOU BY IE. SIGH.
-if(!window.location.origin) {
-  window.location.origin = window.location.protocol + "//" + window.location.host;
-}
+var _origin = location.origin || location.protocol + "//" + location.host;
 
 // I know, I KNOW. The alternative was very expensive perf & time-wise
 // so I saved you a perf hit by checking the stinking UA. Sigh.
@@ -35,7 +32,7 @@ var _disconnectClient = function ( client ) {
 var XFRAME = "xframe",
 	NO_OP = function () {},
 	_defaults = {
-		allowedOrigins : [ window.location.origin ],
+		allowedOrigins : [ _origin ],
 		enabled : true,
 		defaultOriginUrl : "*"
 	},
