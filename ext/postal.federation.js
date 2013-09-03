@@ -2,7 +2,7 @@
  postal.federation
  Copyright (C) 2012 - Jim Cowart (http://freshbrewedcode.com/jimcowart)
  License: Dual licensed MIT & GPL v2.0
- Version 0.2.2
+ Version 0.2.3
  */
 (function ( root, factory ) {
   if ( typeof module === "object" && module.exports ) {
@@ -113,8 +113,7 @@
   	},
   	_handle = {
   		"federation.ping" : function ( data, callback ) {
-  			// TODO: do we want to pong if we've already completed a handshake?
-  			data.source.instanceId = data.packingSlip.instanceId;
+  			data.source.setInstanceId(data.packingSlip.instanceId);
   			if(data.source.handshakeComplete) {
   				data.source.sendPong( data.packingSlip );
   			} else {
@@ -126,7 +125,7 @@
   		},
   		"federation.pong" : function ( data ) {
   			data.source.handshakeComplete = true;
-  			data.source.instanceId = data.packingSlip.instanceId;
+  			data.source.setInstanceId(data.packingSlip.instanceId);
   			if ( data.source.pings[data.packingSlip.pingData.ticket] ) {
   				data.source.pings[data.packingSlip.pingData.ticket].callback( {
   					ticket : data.packingSlip.pingData.ticket,
@@ -238,6 +237,10 @@
   	throw new Error( "An object deriving from FederationClient must provide an implementation for 'send'." );
   };
   
+  FederationClient.prototype.setInstanceId = function( id ) {
+  	this.instanceId = id;
+  };
+  
   riveter( FederationClient );
   
   postal.fedx = _.extend( {
@@ -343,10 +346,13 @@
   	},
   
   	/*
+  	signalReady( callback );
+  	signalReady( "transportName" );
   	signalReady( "transportName", callback );
+  	signalReady( "transportName", targetInstance, callback ); <-- this is NEW
   	signalReady( { transportNameA: targetsForA, transportNameB: targetsForB, transportC: true }, callback);
   	*/
-  	signalReady : function ( transport, callback ) {
+  	signalReady : function ( transport, target, callback ) {
   		if ( !_ready ) {
   			_signalQueue.push( arguments );
   			return;
@@ -356,6 +362,10 @@
   			case 1:
   				if ( typeof transport === 'function' ) {
   					callback = transport;
+  				} else if ( typeof transport === 'string' ) {
+  					transports = {};
+  					transports[transport] = this.transports[transport];
+  					callback = NO_OP;
   				}
   			break;
   			case 2:
@@ -365,6 +375,11 @@
   				} else {
   					transports = transport;
   				}
+  				callback = target || NO_OP;
+  			break;
+  			case 3:
+  				transports = {};
+  				transports[transport] = [ target ];
   			break;
   		}
   		_.each( transports, function ( targets, name ) {
