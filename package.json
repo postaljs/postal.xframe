@@ -1,65 +1,77 @@
 {
-    "name" : "postal.xframe",
-    "description" : "postal.js/postal.federation plugin for federating instances of postal.js across iframe/window boundaries.",
-    "version" : "0.2.4",
-    "homepage" : "http://github.com/postaljs/postal.xframe",
-    "repository" : {
-        "type" : "git",
-        "url" : "git://github.com/postaljs/postal.xframe.git"
+    "name": "postal.xframe",
+    "description": "postal.js/postal.federation plugin for federating instances of postal.js across iframe/window boundaries.",
+    "version": "0.2.4",
+    "homepage": "http://github.com/postaljs/postal.xframe",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/postaljs/postal.xframe.git"
     },
-	"author" : "Jim Cowart (http://freshbrewedcode.com/jimcowart)",
-    "contributors": [
-        {
-            "name" : "Jim Cowart",
-            "email" : "jim@ifandelse.com",
-            "url" : "http://freshbrewedcode.com/jimcowart"
-        },
-        {
-	        "name" : "Jose Badeau",
-	        "email" : "jose.badeau@gmail.com",
-	        "url" : "https://github.com/jbadeau"
-        },
-        {
-	        "name" : "Ryan Rauh",
-	        "email" : "rauh.ryan@gmail.com",
-	        "url" : "http://rauhryan.github.com"
-        },
-        {
-	        "name" : "Dru Sellers",
-	        "email" : "dru@drusellers.com",
-	        "url" : "http://drusellers.com"
-        }
+    "author": "Jim Cowart (http://freshbrewedcode.com/jimcowart)",
+    "contributors": [{
+        "name": "Jim Cowart",
+        "email": "jim@ifandelse.com",
+        "url": "http://freshbrewedcode.com/jimcowart"
+    }, {
+        "name": "Jose Badeau",
+        "email": "jose.badeau@gmail.com",
+        "url": "https://github.com/jbadeau"
+    }, {
+        "name": "Ryan Rauh",
+        "email": "rauh.ryan@gmail.com",
+        "url": "http://rauhryan.github.com"
+    }, {
+        "name": "Dru Sellers",
+        "email": "dru@drusellers.com",
+        "url": "http://drusellers.com"
+    }],
+    "keywords": [
+        "messaging",
+        "pubsub",
+        "frame",
+        "federation",
+        "postal"
     ],
-	"keywords" : [
-		"messaging",
-	    "pubsub",
-	    "frame",
-	    "federation",
-	    "postal"
-	],
-    "bugs" : {
-        "email" : "jim@ifandelse.com",
-        "url" : "http://github.com/postaljs/postal.xframe/issues"
-   },
-	"directories" : { "lib" : "lib" },
-    "main" : "lib/postal.xframe.js",
-	"engines" : {
-		"node" : ">=0.4.0"
-	},
-	"dependencies" : {
-		"underscore"        : ">=1.1.7",
-		"postal.federation" : ">=0.2.2"
-	},
-	"bundleDependencies" : [ "underscore" ],
-	"devDependencies" : {},
-    "licenses" : [
-        {
-            "type" : "MIT",
-            "url" : "http://opensource.org/licenses/MIT"
-        },
-        {
-            "type" : "GPL",
-            "url" : "http://opensource.org/licenses/GPL-2.0"
-        }
-    ]
+    "bugs": {
+        "email": "jim@ifandelse.com",
+        "url": "http://github.com/postaljs/postal.xframe/issues"
+    },
+    "directories": {
+        "lib": "lib"
+    },
+    "main": "lib/postal.xframe.js",
+    "engines": {
+        "node": ">=0.4.0"
+    },
+    "dependencies": {
+        "lodash": "~2.4.1",
+        "postal.federation": ">=0.2.4"
+    },
+    "devDependencies": {
+        "bower": "~1.2.8",
+        "gulp-util": "~2.2.9",
+        "gulp": "~3.3.1",
+        "gulp-imports": "~0.0.1",
+        "gulp-header": "~1.0.2",
+        "gulp-hint-not": "~0.0.3",
+        "gulp-uglify": "~0.1.0",
+        "gulp-rename": "~0.2.1",
+        "gulp-plato": "~0.1.0",
+        "gulp-beautify": "~1.0.3",
+        "express": "~3.4.7",
+        "open": "~0.0.4",
+        "expect.js": "~0.2.0",
+        "lodash": "~2.4.1"
+    },
+    "licenses": [{
+        "type": "MIT",
+        "url": "http://opensource.org/licenses/MIT"
+    }, {
+        "type": "GPL",
+        "url": "http://opensource.org/licenses/GPL-2.0"
+    }],
+    "scripts": {
+        "build": "gulp",
+        "start": "gulp server"
+    }
 }

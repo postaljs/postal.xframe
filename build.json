@@ -1,9 +1,0 @@
-{
-    "anvil.uglify" : {
-        "all": true
-    },
-	"httpPaths" : {
-		"/" : "./"
-	},
-	"dependencies" : [ "anvil.uglify" ]
-}
