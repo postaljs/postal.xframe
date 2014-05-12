@@ -1,5 +1,5 @@
 /* global postal */
-/*jshint -W003 */
+/*jshint -W003,-W120 */
 var _origin = location.origin || location.protocol + "//" + location.host;
 
 function listener() {
@@ -13,7 +13,8 @@ function listener() {
 // out he didn"t know JavaScript, and our passports were stolen on the
 // return trip. We stowed away aboard a freighter headed back to the
 // US and by the time we got back, no one had heard of IE 8 or 9. True story.
-var useEagerSerialize = /MSIE [8,9]/.test(navigator.userAgent);
+var noPostMessageApply;
+var useEagerSerialize = noPostMessageApply = /MSIE [8,9]/.test(navigator.userAgent);
 
 var _memoRemoteByInstanceId = function(memo, instanceId) {
     var proxy = _.find(this.remotes, function(x) {
@@ -72,7 +73,11 @@ var XFRAME = "xframe",
                 if (!this.options.isWorker && !_envIsWorker) {
                     args.push(this.options.origin);
                 }
-                this.target.postMessage.apply(context, args);
+                if (noPostMessageApply) {
+                    this.target.postMessage(args[0], args[1]);
+                } else {
+                    this.target.postMessage.apply(context, args);
+                }
             }
         }
     }, {
