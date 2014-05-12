@@ -1,4 +1,5 @@
 /* global postal */
+/*jshint -W003 */
 var _origin = location.origin || location.protocol + "//" + location.host;
 
 function listener() {
@@ -133,16 +134,21 @@ var XFRAME = "xframe",
                 packingSlip: packingSlip
             };
         },
-        unwrapFromTransport: useEagerSerialize ?
-            function(msgData) {
+        /* jshint ignore:start */
+        unwrapFromTransport: function(msgData) {
+
+            if (typeof msgData === "string" && (useEagerSerialize || msgData.indexOf('"postal":true') !== -1)) {
                 try {
                     return JSON.parse(msgData);
                 } catch (ex) {
                     return {};
                 }
-        } : function(msgData) {
-            return msgData;
+            } else {
+                return msgData;
+            }
+
         },
+        /* jshint ignore:end */
         routeMessage: function(event) {
             // source = remote window or worker?
             var source = event.source || event.currentTarget;
