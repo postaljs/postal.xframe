@@ -73,8 +73,13 @@ var XFRAME = "xframe",
                 if (!this.options.isWorker && !_envIsWorker) {
                     args.push(this.options.origin);
                 }
+                // Thanks IE, we appreciate it. :-(
                 if (noPostMessageApply) {
-                    this.target.postMessage(args[0], args[1]);
+                    if (args.length === 1) {
+                        this.target.postMessage(args[0]);
+                    } else {
+                        this.target.postMessage(args[0], args[1]);
+                    }
                 } else {
                     this.target.postMessage.apply(context, args);
                 }
