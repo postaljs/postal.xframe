@@ -1,6 +1,6 @@
 {
     "name": "postal.xframe",
-    "version": "0.3.0",
+    "version": "0.3.0-rc1",
     "main": ["lib/postal.federation.js"],
     "dependencies": {
         "lodash": "~2.4.1",
