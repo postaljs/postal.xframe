@@ -4,7 +4,7 @@
             postMessage("WORKER1: " + JSON.stringify(msg, null, 2));
         }
     };
-    importScripts('../bower/lodash/dist/lodash.js', '../bower/riveter/lib/riveter.js', '../bower/postal.js/lib/postal.js', '../bower/postal.federation/lib/postal.federation.js', '../lib/postal.xframe.js');
+    importScripts("../bower/lodash/dist/lodash.js", "../bower/riveter/lib/riveter.js", "../bower/conduitjs/lib/conduit.js", "../bower/postal.js/lib/postal.js", "../bower/postal.federation/lib/postal.federation.js", "../lib/postal.xframe.js");
     postal.instanceId("worker1");
     postal.fedx.configure({
         filterMode: "blacklist"
