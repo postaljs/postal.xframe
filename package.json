@@ -45,7 +45,7 @@
     },
     "dependencies": {
         "lodash": "~2.4.1",
-        "postal.federation": ">=0.2.4"
+    "postal.federation": ">=0.2.4"
     },
     "devDependencies": {
         "bower": "~1.2.8",

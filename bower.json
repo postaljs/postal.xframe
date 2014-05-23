@@ -30,7 +30,7 @@
         "requirejs": "~2.1.10",
         "postal.diagnostics": "~0.7.0",
         "postal.js": ">=0.8.11",
-        "postal.federation": "~0.2.4",
+        "postal.federation": ">=0.2.4",
         "riveter": "~0.1.2",
         "lodash": "~2.4.1"
     }
