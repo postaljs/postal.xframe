@@ -13,8 +13,9 @@ function listener() {
 // out he didn"t know JavaScript, and our passports were stolen on the
 // return trip. We stowed away aboard a freighter headed back to the
 // US and by the time we got back, no one had heard of IE 8 or 9. True story.
-var noPostMessageApply;
-var useEagerSerialize = noPostMessageApply = /MSIE [8,9]/.test(navigator.userAgent);
+var useEagerSerialize = /MSIE [8,9]/.test(navigator.userAgent);
+// Hack for testing IE subwindows (https://github.com/Nemo157)
+var noPostMessageApply = /Trident/.test(navigator.userAgent);
 
 var _memoRemoteByInstanceId = function(memo, instanceId) {
     var proxy = _.find(this.remotes, function(x) {
@@ -118,9 +119,16 @@ var XFRAME = "xframe",
             var targets = _.map(document.getElementsByTagName("iframe"), function(i) {
                 var urlHack = document.createElement("a");
                 urlHack.href = i.src;
+                var origin = urlHack.protocol + "//" + urlHack.host;           
+                // The following condition fixes the IE issue of setting the origin while the iframe is 'empty':                
+                // if the iframe has no 'src' set to some meaningful url (at this very moment), 
+                // then the urlHack returns neither protocol nor host information. 
+                if (origin === "//") {
+                    origin = null;
+                } 
                 return {
                     target: i.contentWindow,
-                    origin: (urlHack.protocol + "//" + urlHack.host) || _config.defaultOriginUrl
+                    origin: origin || _config.defaultOriginUrl
                 };
             });
             if (window.parent && window.parent !== window) {
