@@ -1,4 +1,4 @@
-# postal.xframe
+# postal.xframe (with IE hacks)
 
 ## Version 0.3.0-rc1 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
 
