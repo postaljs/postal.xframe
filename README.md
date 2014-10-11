@@ -1,6 +1,8 @@
-# postal.xframe (with IE hacks)
+# postal.xframe
 
-## Version 0.3.0-rc1 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+## Version 0.3.0 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+
+*(special thanks to @rbtbar for the IE 10/11 fixes where iframes aren't reporting a host or protocol)*
 
 ## What is it?
 postal.xframe is a [postal.federation](https://github.com/postaljs/postal.federation) plugin - enabling you to 'federate' instances of [postal](https://github.com/postaljs/postal.js) across iframe/window boundaries - as well as **web workers** - in the browser.

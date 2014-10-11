@@ -1,7 +1,7 @@
 {
     "name": "postal.xframe",
     "description": "postal.js/postal.federation plugin for federating instances of postal.js across iframe/window boundaries.",
-    "version": "0.3.0-rc1",
+    "version": "0.3.0",
     "homepage": "http://github.com/postaljs/postal.xframe",
     "repository": {
         "type": "git",
@@ -24,6 +24,10 @@
         "name": "Dru Sellers",
         "email": "dru@drusellers.com",
         "url": "http://drusellers.com"
+    }, {
+        "name": "Robert Bar",
+        "email": "robert@rbsoftware.pl",
+        "url": "http://rbsoftware.pl"
     }],
     "keywords": [
         "messaging",
@@ -45,7 +49,7 @@
     },
     "dependencies": {
         "lodash": "~2.4.1",
-    "postal.federation": ">=0.2.4"
+        "postal.federation": ">=0.2.4"
     },
     "devDependencies": {
         "bower": "~1.2.8",
@@ -73,5 +77,9 @@
     "scripts": {
         "build": "gulp",
         "start": "gulp server"
-    }
+    },
+    "files" : [
+        "LICENSE",
+        "lib"
+    ]
 }
