@@ -6,6 +6,23 @@ function listener() {
 	plugin.routeMessage.apply( plugin, arguments );
 }
 
+function safeSerialize( envelope ) {
+	for(var k in envelope) {
+		if(envelope.hasOwnProperty(k)) {
+			if(typeof envelope[k] === "function") {
+				delete envelope[k];
+			}
+			if(_.isPlainObject(envelope[k])) {
+				safeSerialize( envelope[k] );
+			}
+			if(_.isArray(envelope[k])) {
+				_.each(envelope[k], safeSerialize);
+			}
+		}
+	}
+	return envelope;
+}
+
 // I know, I KNOW. The alternative was very expensive perf & time-wise
 // so I saved you a perf hit by checking the stinking UA. Sigh.
 // I sought the opinion of several other devs. We all traveled
@@ -50,9 +67,10 @@ var XFRAME = "xframe",
 	_defaults = {
 		allowedOrigins: [ _origin ],
 		enabled: true,
-		defaultOriginUrl: "*"
+		defaultOriginUrl: "*",
+		safeSerialize: false
 	},
-	_config = _defaults,
+	_config = _.extend({}, _defaults),
 	XFrameClient = postal.fedx.FederationClient.extend( {
 		transportName: "xframe",
 		shouldProcess: function() {
@@ -103,9 +121,12 @@ var XFRAME = "xframe",
 		XFrameClient: XFrameClient,
 		configure: function( cfg ) {
 			if ( cfg ) {
-				_config = _.defaults( cfg, _defaults );
+				_config = _.defaults( _.extend( _config, cfg ), _defaults );
 			}
 			return _config;
+		},
+		clearConfiguration: function() {
+			_config = _.extend({}, _defaults);
 		},
 		//find all iFrames and the parent window if in an iframe
 		getTargets: _envIsWorker ? function() {
@@ -183,7 +204,11 @@ var XFRAME = "xframe",
 				remote.onMessage( parsed.packingSlip );
 			}
 		},
-		sendMessage: function( envelope ) {
+		sendMessage: function( env ) {
+			var envelope = env;
+			if(_config.safeSerialize) {
+				envelope = safeSerialize(_.cloneDeep(env));
+			}
 			_.each( this.remotes, function( remote ) {
 				remote.sendMessage( envelope );
 			} );

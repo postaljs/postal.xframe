@@ -1,5 +1,14 @@
 /*global postal*/
 
+// We need to tell postal how to get a deferred instance
+postal.configuration.promise.createDeferred = function() {
+    return new $.Deferred();
+};
+// We need to tell postal how to get a "public-facing"/safe promise instance
+postal.configuration.promise.getPromise = function(dfd) {
+    return dfd.promise();
+};
+
 postal.instanceId( "parent" );
 
 postal.fedx.addFilter( [
@@ -8,7 +17,9 @@ postal.fedx.addFilter( [
 	{ channel : 'webworker1', topic : '#', direction : 'out' },
 	{ channel : 'webworker2', topic : '#', direction : 'out' },
 	{ channel : 'webworker',  topic : '#', direction : 'both'},
-	{ channel : 'parentz',    topic : '#', direction : 'in'  }
+	{ channel : 'parentz',    topic : '#', direction : 'in'  },
+	{ channel : 'reqres',     topic : '#', direction : 'both'},
+	{ channel : 'postal.request-response', topic : '#', direction : 'both'}
 ] );
 /*postal.addWireTap( function ( d, e ) {
 	console.log( "ID: " + postal.instanceId() + " " + JSON.stringify( e, null, 4 ) );

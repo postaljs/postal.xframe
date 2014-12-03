@@ -33,7 +33,8 @@ describe("postal.xframe - unit tests", function() {
                 expect(postal.fedx.transports.xframe.configure()).to.eql({
                     allowedOrigins: [window.location.origin],
                     enabled: true,
-                    defaultOriginUrl: "*"
+                    defaultOriginUrl: "*",
+                    safeSerialize: false
                 });
             });
         });
@@ -44,13 +45,14 @@ describe("postal.xframe - unit tests", function() {
                 });
             });
             afterEach(function() {
-                postal.fedx.transports.xframe.configure({});
+                postal.fedx.transports.xframe.clearConfiguration();
             });
             it("should return expected values", function() {
                 expect(postal.fedx.transports.xframe.configure()).to.eql({
                     allowedOrigins: [window.location.origin],
                     enabled: false,
-                    defaultOriginUrl: "*"
+                    defaultOriginUrl: "*",
+                    safeSerialize: false
                 });
             });
         });
@@ -63,13 +65,14 @@ describe("postal.xframe - unit tests", function() {
                 });
             });
             afterEach(function() {
-                postal.fedx.transports.xframe.configure({});
+                postal.fedx.transports.xframe.clearConfiguration();
             });
             it("should return expected values", function() {
                 expect(postal.fedx.transports.xframe.configure()).to.eql({
                     allowedOrigins: ["who.com"],
                     enabled: false,
-                    defaultOriginUrl: "donna.noble.uk"
+                    defaultOriginUrl: "donna.noble.uk",
+                    safeSerialize: false
                 });
             });
         });
@@ -83,12 +86,13 @@ describe("postal.xframe - unit tests", function() {
             }, "123456");
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
         });
         it("should return true if target is in allowed origins", function() {
             postal.fedx.transports.xframe.configure({
                 allowedOrigins: ["http://fake.origin"]
             });
+            debugger;
             expect(client.shouldProcess()).to.be(true);
         });
         it("should return false if target is *not* in allowed origins", function() {
@@ -128,7 +132,7 @@ describe("postal.xframe - unit tests", function() {
             });
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
         });
@@ -149,7 +153,7 @@ describe("postal.xframe - unit tests", function() {
             expect(fakeTarget.targetUrl).to.be("http://fake.origin");
         });
         it("should not send if shouldProcess returns false", function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             client.send({
                 foo: "bar"
             });
@@ -170,7 +174,7 @@ describe("postal.xframe - unit tests", function() {
             });
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
         });
@@ -191,7 +195,7 @@ describe("postal.xframe - unit tests", function() {
             expect(fakeTarget.targetUrl).to.be("http://fake.origin");
         });
         it("should not send if shouldProcess returns false", function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             client.sendPing();
             expect(fakeTarget.msg).to.be(undefined);
             expect(fakeTarget.targetUrl).to.be(undefined);
@@ -217,7 +221,7 @@ describe("postal.xframe - unit tests", function() {
             });
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
         });
@@ -238,7 +242,7 @@ describe("postal.xframe - unit tests", function() {
             expect(fakeTarget.targetUrl).to.be("http://fake.origin");
         });
         it("should not send if shouldProcess returns false", function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             client.sendPing();
             expect(fakeTarget.msg).to.be(undefined);
             expect(fakeTarget.targetUrl).to.be(undefined);
@@ -261,7 +265,7 @@ describe("postal.xframe - unit tests", function() {
             });
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
         });
@@ -293,7 +297,7 @@ describe("postal.xframe - unit tests", function() {
             expect(fakeTarget.targetUrl).to.be("http://fake.origin");
         });
         it("should not send if shouldProcess returns false", function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             client.sendMessage(env);
             expect(fakeTarget.msg).to.be(undefined);
             expect(fakeTarget.targetUrl).to.be(undefined);
@@ -321,7 +325,7 @@ describe("postal.xframe - unit tests", function() {
             });
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
         });
@@ -435,7 +439,7 @@ describe("postal.xframe - unit tests", function() {
             postal.fedx.transports.xframe.remotes = [client];
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.transports.xframe.remotes = [];
         });
 
@@ -493,7 +497,7 @@ describe("postal.xframe - unit tests", function() {
             postal.fedx.transports.xframe.remotes = [client];
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.transports.xframe.remotes = [];
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
@@ -533,8 +537,29 @@ describe("postal.xframe - unit tests", function() {
             });
             expect(fakeTarget.targetUrl).to.be("http://fake.origin");
         });
+		it("should not attempt to send methods if safeSerialize is true", function() {
+			var msg;
+            var origVal = postal.fedx.transports.xframe.configure().safeSerialize;
+            postal.fedx.transports.xframe.configure({ safeSerialize: true });
+            client.handshakeComplete = true;
+            postal.fedx.sendMessage({
+                channel: "federate",
+                topic: "all.the.things",
+                data: "Booyah!",
+                muhMethod: function() {
+                	console.log("do stuff");
+                }
+            });
+            expect(fakeTarget.msg.packingSlip.envelope).to.eql({
+                channel: "federate",
+                topic: "all.the.things",
+                data: "Booyah!",
+                knownIds: [],
+                originId: "test123"
+            });
+        });
         it("should not send if shouldProcess returns false", function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.sendMessage({
                 channel: "federate",
                 topic: "all.the.things",
@@ -560,7 +585,7 @@ describe("postal.xframe - unit tests", function() {
             postal.fedx.transports.xframe.remotes = [client];
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.transports.xframe.remotes = [];
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
@@ -588,7 +613,7 @@ describe("postal.xframe - unit tests", function() {
             postal.fedx.transports.xframe.remotes = [client];
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.transports.xframe.remotes = [];
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
@@ -618,7 +643,7 @@ describe("postal.xframe - unit tests", function() {
             postal.fedx.transports.xframe.remotes = [client];
         });
         afterEach(function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.transports.xframe.remotes = [];
             delete fakeTarget.targetUrl;
             delete fakeTarget.msg;
@@ -643,7 +668,7 @@ describe("postal.xframe - unit tests", function() {
             expect(fakeTarget.targetUrl).to.be("http://fake.origin");
         });
         it("should not send if shouldProcess returns false", function() {
-            postal.fedx.transports.xframe.configure({});
+            postal.fedx.transports.xframe.clearConfiguration();
             postal.fedx.transports.xframe.signalReady({
                 target: fakeTarget,
                 origin: "http://fake.origin"
