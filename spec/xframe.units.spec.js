@@ -92,7 +92,6 @@ describe("postal.xframe - unit tests", function() {
             postal.fedx.transports.xframe.configure({
                 allowedOrigins: ["http://fake.origin"]
             });
-            debugger;
             expect(client.shouldProcess()).to.be(true);
         });
         it("should return false if target is *not* in allowed origins", function() {
