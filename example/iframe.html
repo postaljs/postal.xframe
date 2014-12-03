@@ -5,18 +5,28 @@
     <title>Playground</title>
     <script type="text/javascript" src="../bower/lodash/dist/lodash.js"></script>
     <script type="text/javascript" src="../bower/jquery/jquery.js"></script>
-    <script type="text/javascript" src="../bower/conduitjs/lib/conduit.js"></script>
     <script type="text/javascript" src="../bower/postal.js/lib/postal.js"></script>
     <script type="text/javascript" src="../bower/riveter/lib/riveter.js"></script>
     <script type="text/javascript" src="../bower/postal.federation/lib/postal.federation.js"></script>
+    <script type="text/javascript" src="../bower/postal.request-response/lib/postal.request-response.js"></script>
     <script type="text/javascript" src="../lib/postal.xframe.js"></script>
     <script type="text/javascript">
+	    // We need to tell postal how to get a deferred instance
+		postal.configuration.promise.createDeferred = function() {
+		    return new $.Deferred();
+		};
+		// We need to tell postal how to get a "public-facing"/safe promise instance
+		postal.configuration.promise.getPromise = function(dfd) {
+		    return dfd.promise();
+		};
         postal.instanceId("iframe1");
         postal.fedx.addFilter([
             { channel: 'postal',    topic: '#', direction: 'in'  },
             { channel: 'iframez',   topic: '#', direction: 'in'  },
             { channel: 'parentz',   topic: '#', direction: 'out' },
-            { channel: 'webworker', topic: '#', direction: 'in'  }
+            { channel: 'webworker', topic: '#', direction: 'in'  },
+			{ channel : 'reqres',     topic : '#', direction : 'both'},
+			{ channel : 'postal.request-response', topic : '#', direction : 'both'}
         ]);
         postal.addWireTap(function(d, e) {
             console.log("ID: " + postal.instanceId() + " - " + JSON.stringify(e, null, 4));
