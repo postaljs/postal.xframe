@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Playground</title>
-    <script type="text/javascript" src="../bower/lodash/dist/lodash.js"></script>
+</head>
+<body>
+	<div>
+	    <input type="button" value="Send Msg" id="msg2">
+	    <input type="button" value="Disconnect" id="msg3">
+	</div>
+	<div id="msgs"></div>
+
+	<script type="text/javascript" src="../bower/lodash/dist/lodash.js"></script>
     <script type="text/javascript" src="../bower/jquery/jquery.js"></script>
     <script type="text/javascript" src="../bower/postal.js/lib/postal.js"></script>
     <script type="text/javascript" src="../bower/riveter/lib/riveter.js"></script>
@@ -11,6 +19,11 @@
     <script type="text/javascript" src="../bower/postal.request-response/lib/postal.request-response.js"></script>
     <script type="text/javascript" src="../lib/postal.xframe.js"></script>
     <script type="text/javascript">
+	    window.addEventListener("message", function(e) {
+			console.log("------- IFRAME1 -------");
+			console.log(e.data);
+			console.log("------ /IFRAME1 -------");
+		});
 	    // We need to tell postal how to get a deferred instance
 		postal.configuration.promise.createDeferred = function() {
 		    return new $.Deferred();
@@ -67,12 +80,5 @@
             postal.fedx.signalReady();
         });
     </script>
-</head>
-<body>
-<div>
-    <input type="button" value="Send Msg" id="msg2">
-    <input type="button" value="Disconnect" id="msg3">
-</div>
-<div id="msgs"></div>
 </body>
 </html>

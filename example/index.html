@@ -27,6 +27,11 @@
 </div>
 <div id="msgs"></div>
 <script type="text/javascript">
+	window.addEventListener("message", function(e) {
+		console.log("------- PARENT -------");
+		console.log(e.data);
+		console.log("------ /PARENT -------");
+	});
     postal.fedx.signalReady();
 </script>
 </body>
