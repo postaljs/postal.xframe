@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Playground</title>
-    <script type="text/javascript" src="../bower/lodash/dist/lodash.js"></script>
+</head>
+<body>
+	<div>
+	    <input type="button" value="Send Msg" id="msg2">
+	    <input type="button" value="Disconnect" id="msg3">
+	</div>
+	<div id="msgs"></div>
+	<script type="text/javascript" src="../bower/lodash/dist/lodash.js"></script>
     <script type="text/javascript" src="../bower/jquery/jquery.js"></script>
     <script type="text/javascript" src="../bower/postal.js/lib/postal.js"></script>
     <script type="text/javascript" src="../bower/riveter/lib/riveter.js"></script>
@@ -67,12 +74,5 @@
             postal.fedx.signalReady();
         });
     </script>
-</head>
-<body>
-<div>
-    <input type="button" value="Send Msg" id="msg2">
-    <input type="button" value="Disconnect" id="msg3">
-</div>
-<div id="msgs"></div>
 </body>
 </html>

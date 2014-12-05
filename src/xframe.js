@@ -7,16 +7,16 @@ function listener() {
 }
 
 function safeSerialize( envelope ) {
-	for(var k in envelope) {
-		if(envelope.hasOwnProperty(k)) {
-			if(typeof envelope[k] === "function") {
-				delete envelope[k];
+	for (var k in envelope) {
+		if ( envelope.hasOwnProperty( k ) ) {
+			if ( typeof envelope[ k ] === "function" ) {
+				delete envelope[ k ];
 			}
-			if(_.isPlainObject(envelope[k])) {
-				safeSerialize( envelope[k] );
+			if ( _.isPlainObject( envelope[ k ] ) ) {
+				safeSerialize( envelope[ k ] );
 			}
-			if(_.isArray(envelope[k])) {
-				_.each(envelope[k], safeSerialize);
+			if ( _.isArray( envelope[ k ] ) ) {
+				_.each( envelope[ k ], safeSerialize );
 			}
 		}
 	}
@@ -31,8 +31,6 @@ function safeSerialize( envelope ) {
 // return trip. We stowed away aboard a freighter headed back to the
 // US and by the time we got back, no one had heard of IE 8 or 9. True story.
 var useEagerSerialize = /MSIE [8,9]/.test( navigator.userAgent );
-// Hack for testing IE subwindows (https://github.com/Nemo157)
-var noPostMessageApply = /Trident/.test( navigator.userAgent );
 
 var _memoRemoteByInstanceId = function( memo, instanceId ) {
 	var proxy = _.find( this.remotes, function( x ) {
@@ -70,7 +68,7 @@ var XFRAME = "xframe",
 		defaultOriginUrl: "*",
 		safeSerialize: false
 	},
-	_config = _.extend({}, _defaults),
+	_config = _.extend( {}, _defaults ),
 	XFrameClient = postal.fedx.FederationClient.extend( {
 		transportName: "xframe",
 		shouldProcess: function() {
@@ -92,8 +90,7 @@ var XFRAME = "xframe",
 				if ( !this.options.isWorker && !_envIsWorker ) {
 					args.push( this.options.origin );
 				}
-				// Thanks IE, we appreciate it. :-(
-				if ( noPostMessageApply ) {
+				if ( !_envIsWorker ) {
 					if ( args.length === 1 ) {
 						this.target.postMessage( args[ 0 ] );
 					} else {
@@ -126,7 +123,7 @@ var XFRAME = "xframe",
 			return _config;
 		},
 		clearConfiguration: function() {
-			_config = _.extend({}, _defaults);
+			_config = _.extend( {}, _defaults );
 		},
 		//find all iFrames and the parent window if in an iframe
 		getTargets: _envIsWorker ? function() {
@@ -206,8 +203,8 @@ var XFRAME = "xframe",
 		},
 		sendMessage: function( env ) {
 			var envelope = env;
-			if(_config.safeSerialize) {
-				envelope = safeSerialize(_.cloneDeep(env));
+			if ( _config.safeSerialize ) {
+				envelope = safeSerialize( _.cloneDeep( env ) );
 			}
 			_.each( this.remotes, function( remote ) {
 				remote.sendMessage( envelope );
