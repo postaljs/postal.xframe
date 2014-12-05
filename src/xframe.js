@@ -31,8 +31,6 @@ function safeSerialize( envelope ) {
 // return trip. We stowed away aboard a freighter headed back to the
 // US and by the time we got back, no one had heard of IE 8 or 9. True story.
 var useEagerSerialize = /MSIE [8,9]/.test( navigator.userAgent );
-// Hack for testing IE subwindows (https://github.com/Nemo157)
-var noPostMessageApply = /Trident/.test( navigator.userAgent );
 
 var _memoRemoteByInstanceId = function( memo, instanceId ) {
 	var proxy = _.find( this.remotes, function( x ) {

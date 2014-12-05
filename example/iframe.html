@@ -19,11 +19,6 @@
     <script type="text/javascript" src="../bower/postal.request-response/lib/postal.request-response.js"></script>
     <script type="text/javascript" src="../lib/postal.xframe.js"></script>
     <script type="text/javascript">
-	    window.addEventListener("message", function(e) {
-			console.log("------- IFRAME1 -------");
-			console.log(e.data);
-			console.log("------ /IFRAME1 -------");
-		});
 	    // We need to tell postal how to get a deferred instance
 		postal.configuration.promise.createDeferred = function() {
 		    return new $.Deferred();

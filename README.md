@@ -1,6 +1,6 @@
 # postal.xframe
 
-## Version 0.3.1 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+## Version 0.3.2 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
 
 *(special thanks to @rbtbar for the IE 10/11 fixes where iframes aren't reporting a host or protocol)*
 
