@@ -16,7 +16,6 @@
         "url": "git://github.com/postaljs/postal.xframe.git"
     },
     "main": [
-        "lib/postal.xframe.min.js",
         "lib/postal.xframe.js"
     ],
     "dependencies": {
