@@ -11,14 +11,13 @@
 	</div>
 	<div id="msgs"></div>
 
-	<script type="text/javascript" src="../bower/lodash/dist/lodash.js"></script>
-    <script type="text/javascript" src="../bower/jquery/jquery.js"></script>
-    <script type="text/javascript" src="../bower/postal.js/lib/postal.js"></script>
-    <script type="text/javascript" src="../bower/riveter/lib/riveter.js"></script>
-    <script type="text/javascript" src="../bower/postal.federation/lib/postal.federation.js"></script>
-    <script type="text/javascript" src="../bower/postal.request-response/lib/postal.request-response.js"></script>
-    <script type="text/javascript" src="../lib/postal.xframe.js"></script>
-    <script type="text/javascript">
+    <script src="../node_modules/lodash/index.js"></script>
+    <script src="../node_modules/jquery/dist/jquery.js"></script>
+    <script src="../node_modules/postal/lib/postal.js"></script>
+    <script src="../node_modules/postal.federation/lib/postal.federation.js"></script>
+    <script src="../node_modules/postal.request-response/lib/postal.request-response.js"></script>
+    <script src="../lib/postal.xframe.js"></script>
+    <script>
 	    // We need to tell postal how to get a deferred instance
 		postal.configuration.promise.createDeferred = function() {
 		    return new $.Deferred();
