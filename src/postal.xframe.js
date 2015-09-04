@@ -6,9 +6,7 @@
 		} );
 	} else if ( typeof module === "object" && module.exports ) {
 		// Node, or CommonJS-Like environments
-		module.exports = function( postalFed ) {
-			return factory( require( "lodash" ), postalFed );
-		};
+		module.exports = factory( require( "lodash"), require( "postal.federation" ) );
 	} else {
 		// Browser globals
 		root.postal = factory( root._, root.postal, root );
