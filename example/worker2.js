@@ -4,7 +4,12 @@
             postMessage("WORKER2: " + JSON.stringify(msg, null, 2));
         }
     };
-    importScripts("../bower/lodash/dist/lodash.js", "../bower/riveter/lib/riveter.js", "../bower/postal.js/lib/postal.js", "../bower/postal.federation/lib/postal.federation.js", "../lib/postal.xframe.js");
+    importScripts(
+        "../node_modules/lodash/index.js", 
+        "../node_modules/postal/lib/postal.js", 
+        "../node_modules/postal.federation/lib/postal.federation.js", 
+        "../lib/postal.xframe.js"
+    );
     postal.instanceId("worker2");
     postal.fedx.addFilter([{
         channel: "webworker2",
