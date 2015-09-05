@@ -1,26 +1,27 @@
 {
-    "name": "postal.xframe",
-    "version": "0.4.0",
-    "description": "postal.js/postal.federation plugin for federating instances of postal.js across iframe/window boundaries.",
-    "homepage": "https://github.com/postaljs/postal.xframe",
-    "keywords": [
-        "messaging",
-        "pubsub",
-        "frame",
-        "federation",
-        "postal"
-    ],
-    "author": "Jim Cowart <jim@ifandelse.com>",
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/postaljs/postal.xframe.git"
-    },
-    "main": [
-        "lib/postal.xframe.js"
-    ],
-    "dependencies": {
-        "lodash": "3.x",
-        "postal.federation": ">=0.4.0",
-        "postal.js": "1.x"
-    }
+  "name": "postal.xframe",
+  "version": "0.4.0",
+  "description": "postal.js/postal.federation plugin for federating instances of postal.js across iframe/window boundaries.",
+  "homepage": "https://github.com/postaljs/postal.xframe",
+  "keywords": [
+    "messaging",
+    "pubsub",
+    "frame",
+    "federation",
+    "postal"
+  ],
+  "author": "Jim Cowart <jim@ifandelse.com>",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/postaljs/postal.xframe.git"
+  },
+  "main": [
+    "lib/postal.xframe.js"
+  ],
+  "dependencies": {
+    "lodash": "3.x",
+    "postal.federation": ">=0.5.2",
+    "postal.js": "1.x",
+    "babel-polyfill": "~0.0.1"
+  }
 }

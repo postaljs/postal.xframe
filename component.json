@@ -5,6 +5,6 @@
     "dependencies": {
         "lodash": "3.x",
         "postal.js": "1.x",
-        "postal.federation": "~0.4.0"
+        "postal.federation": "~0.5.2"
     }
 }

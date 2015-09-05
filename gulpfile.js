@@ -1,80 +1,128 @@
-var gulp = require("gulp");
-var fileImports = require("gulp-imports");
-var header = require("gulp-header");
-var beautify = require("gulp-beautify");
-var hintNot = require("gulp-hint-not");
-var uglify = require("gulp-uglify");
-var rename = require("gulp-rename");
-var plato = require("gulp-plato");
-var gutil = require("gulp-util");
-var express = require("express");
-var path = require("path");
-var pkg = require("./package.json");
-var open = require("open");
+var _ = require( "lodash" );
+var gulp = require( "gulp" );
+var eslint = require( "gulp-eslint" );
+var uglify = require( "gulp-uglify" );
+var rename = require( "gulp-rename" );
+var gutil = require( "gulp-util" );
+var express = require( "express" );
+var path = require( "path" );
+var open = require( "open" );
 var port = 3080;
+var jscs = require( "gulp-jscs" );
+var gulpChanged = require( "gulp-changed" );
+var webpack = require( "webpack-stream" );
+var karma = require( "karma" );
+var sourcemaps = require( "gulp-sourcemaps" );
 
-var banner = ["/**",
-    " * <%= pkg.name %> - <%= pkg.description %>",
-    " * Author: <%= pkg.author %>",
-    " * Version: v<%= pkg.version %>",
-    " * Url: <%= pkg.homepage %>",
-    " * License(s): <%= pkg.license %>",
-    " */",
-    ""
-].join("\n");
+gulp.task( "build:es5", [ "format" ], function() {
+	return gulp.src( "src/index.js" )
+		.pipe( webpack( require( "./webpack.config.js" ) ) )
+		.pipe( rename( "postal.xframe.js" ) )
+		.pipe( gulp.dest( "lib/" ) )
+		.pipe( sourcemaps.init( { loadMaps: true } ) )
+		.pipe( uglify( {
+			preserveComments: "license",
+			compress: {
+				/*eslint-disable */
+				negate_iife: false
+				/*eslint-enable */
+			}
+		} ) )
+		.pipe( rename( "postal.xframe.min.js" ) )
+		.pipe( sourcemaps.write( "./" ) )
+		.pipe( gulp.dest( "lib/" ) );
+} );
 
-gulp.task("combine", function() {
-    gulp.src(["./src/postal.xframe.js"])
-        .pipe(header(banner, {
-            pkg: pkg
-        }))
-        .pipe(fileImports())
-        .pipe(hintNot())
-        .pipe(beautify({
-            indentSize: 4,
-            preserveNewlines: false
-        }))
-        .pipe(gulp.dest("./lib/"))
-        .pipe(uglify({
-            compress: {
-                negate_iife: false
-            }
-        }))
-        .pipe(header(banner, {
-            pkg: pkg
-        }))
-        .pipe(rename("postal.xframe.min.js"))
-        .pipe(gulp.dest("./lib/"));
-});
+gulp.task( "default", [ "build:es5" ] );
 
-gulp.task("default", function() {
-    gulp.run("combine");
-});
+function runTests( options, done ) {
+	global.KARMA = true;
+	var server = new karma.Server( _.extend( {
+		configFile: path.join( __dirname, "/karma.conf.js" ),
+		singleRun: true
 
-gulp.task("report", function() {
-    gulp.src("./lib/postal.xframe.js")
-        .pipe(plato("report"));
-});
+		// no-op keeps karma from process.exit'ing gulp
+	}, options ), done || function() {} );
 
-var createServer = function(port) {
-    var p = path.resolve("./");
-    var app = express();
-    app.use(express.static(p));
-    app.listen(port, function() {
-        gutil.log("Listening on", port);
-    });
+	server.start();
+}
 
-    return {
-        app: app
-    };
+gulp.task( "test", [ "format", "build:es5" ], function( done ) {
+	// There are issues with the osx reporter keeping
+	// the node process running, so this forces the main
+	// test task to not show errors in a notification
+	runTests( { reporters: [ "spec" ] }, function( err ) {
+		if ( err !== 0 ) {
+			// Exit with the error code
+			throw err;
+		} else {
+			done( null );
+		}
+	} );
+} );
+
+gulp.task( "coverage", [ "format", "build:es5" ], function( done ) {
+	// There are issues with the osx reporter keeping
+	// the node process running, so this forces the main
+	// test task to not show errors in a notification
+	runTests( {
+		reporters: [ "progress", "coverage" ],
+		preprocessors: {
+			"lib/**/*.js": [ "coverage" ]
+		}
+	}, function( err ) {
+		if ( err !== 0 ) {
+			// Exit with the error code
+			process.exit( err );
+		} else {
+			done( null );
+		}
+	} );
+} );
+
+gulp.task( "lint", function() {
+	return gulp.src( [ "src/**/*.js", "spec/**/*.spec.js" ] )
+	.pipe( eslint() )
+	.pipe( eslint.format() )
+	.pipe( eslint.failOnError() );
+} );
+
+gulp.task( "format", [ "lint" ], function() {
+	return gulp.src( [ "*.js", "{src,spec}/**/*.js" ] )
+		.pipe( jscs( {
+			configPath: ".jscsrc",
+			fix: true
+		} ) )
+		.on( "error", function( error ) {
+			gutil.log( gutil.colors.red( error.message ) );
+			this.end();
+		} )
+		.pipe( gulpChanged( ".", { hasChanged: gulpChanged.compareSha1Digest } ) )
+		.pipe( gulp.dest( "." ) );
+} );
+
+gulp.task( "watch", function() {
+	gulp.watch( "src/**/*", [ "default" ] );
+} );
+
+var createServer = function( port ) {
+	var p = path.resolve( "./" );
+	var app = express();
+	app.use( express.static( p ) );
+	app.listen( port, function() {
+		gutil.log( "Listening on", port );
+	} );
+
+	return {
+		app: app
+	};
 };
 
 var servers;
 
-gulp.task("server", function() {
-    gulp.run("combine", "report");
-    if (!servers) {
-        servers = createServer(port);
-    }
-    open("http://localhost:" + port + "/index.html");
-});
+gulp.task( "server", function() {
+	if ( !servers ) {
+		servers = createServer( port );
+	}
+	open( "http://localhost:" + port + "/index.html" );
+} );
