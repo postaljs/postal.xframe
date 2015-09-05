@@ -5,9 +5,10 @@
         }
     };
     importScripts(
-        "../node_modules/lodash/index.js", 
-        "../node_modules/postal/lib/postal.js", 
-        "../node_modules/postal.federation/lib/postal.federation.js", 
+        "../node_modules/babel-core/browser-polyfill.js",
+        "../node_modules/lodash/index.js",
+        "../node_modules/postal/lib/postal.js",
+        "../node_modules/postal.federation/lib/postal.federation.js",
         "../lib/postal.xframe.js"
     );
     postal.instanceId("worker2");
