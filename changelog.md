@@ -1,3 +1,9 @@
+## v0.5.0
+
+* Converted to ES6.
+* Moved to webpack build.
+* Enabled Karma-based tests.
+
 ## v0.4.0
 
 * Switched examples and spec files to use node modules instead of bower

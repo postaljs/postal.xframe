@@ -1,6 +1,6 @@
 # postal.xframe
 
-## Version 0.4.0 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+## Version 0.5.0 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
 
 *(special thanks to @rbtbar for the IE 10/11 fixes where iframes aren't reporting a host or protocol)*
 
@@ -133,6 +133,7 @@ postal.fedx.transports.xframe.listenToWorker( worker );
 * `gulp coverage` to build, run tests and show an istanbul coverage report
 * `gulp` to build
 * `gulp watch` to start a file watch which builds as you save changes to the `src/` files
+* `npm start` will start a local web server that lets you run browser-based tests or see a _very_simple example of a parent window and two iframes communicating.
 
 ## Contributing
 
