@@ -485,6 +485,14 @@ function executeTests() {
 					} );
 					expect( typeof result === "undefined" ).to.be( true );
 				} );
+				it( "should not route a message with origin that is not in the allowed origin list", function() {
+					postal.fedx.transports.xframe.routeMessage( {
+						origin: "http://fake.notAllowed.origin",
+						source: fakeTarget,
+						data: '{"foo":"bar", "baz":"bacon"}'
+					} );
+					expect( typeof result === "undefined" ).to.be( true );
+				} );
 			} );
 			describe( "sending a disconnect message", function() {
 				it( "should remove the remote from the remotes array", function() {
