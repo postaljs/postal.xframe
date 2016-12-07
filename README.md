@@ -76,6 +76,18 @@ postal.fedx.addFilter([
 // to share
 postal.fedx.signalReady();
 
+// signalReady can also take two arguments: a target iframe (or array of targets), and a
+// callback. The callback will be invoked anytime the remote postal instance responds to
+// the ping sent when federating with it. This means if you passed an array of four targets,
+// the callback should be invoked four times.
+postal.fedx.signalReady(
+	[ target1, target2 ],
+	function( info ) {
+		// a source prop exist on info as well, FYI
+		console.log( "federated with:", info.instanceId );
+	}
+);
+
 // This message will be published locally as well as sent across to the remote postal
 // instances of any federated iframes
 postal.publish({
