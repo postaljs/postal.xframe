@@ -66,8 +66,9 @@
     "postal.federation": ">=0.5.2"
   },
   "devDependencies": {
-  	"babel": "5.x",
+    "babel": "5.x",
     "babel-loader": "~4.0.0",
+    "bootstrap": "^3.3.5",
     "eslint": "^1.3.1",
     "expect.js": "~0.2.0",
     "express": "~3.4.7",
@@ -88,15 +89,16 @@
     "karma-spec-reporter": "0.0.20",
     "mocha": "^2.3.0",
     "open": "~0.0.4",
+    "postal": "^2.0.4",
+    "postal.request-response": "^0.3.1",
     "webpack": "^1.12.1",
-    "webpack-stream": "^2.1.0",
-    "bootstrap": "^3.3.5",
-    "postal.request-response": "^0.3.1"
+    "webpack-stream": "^2.1.0"
   },
   "license": "(MIT OR GPL-2.0)",
   "scripts": {
     "build": "gulp",
-    "start": "gulp server"
+    "start": "gulp server",
+    "test": "gulp test"
   },
   "files": [
     "LICENSE",

@@ -5,8 +5,8 @@ import { state, env } from "./state";
 export default class XFrameClient extends postal.fedx.FederationClient {
 
 	constructor( ...args ) {
-		this.transportName = "xframe";
 		super( ...args );
+		this.transportName = "xframe";
 	}
 
 	shouldProcess() {
