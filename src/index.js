@@ -119,7 +119,7 @@ const plugin = postal.fedx.transports.xframe = {
 		if ( state.config.safeSerialize ) {
 			envelope = safeSerialize( _.cloneDeep( env ) );
 		}
-		_.each( this.remotes, function( remote ) {
+		_.forEach( this.remotes, function( remote ) {
 			remote.sendMessage( envelope );
 		} );
 	},
@@ -127,15 +127,15 @@ const plugin = postal.fedx.transports.xframe = {
 		options = options || {};
 		const clients = options.instanceId ?
 			// an instanceId value or array was provided, let's get the client proxy instances for the id(s)
-			_.reduce( _.isArray( options.instanceId ) ? options.instanceId : [ options.instanceId ], _memoRemoteByInstanceId, [], this ) :
+			_.reduce( _.isArray( options.instanceId ) ? options.instanceId : [ options.instanceId ], _.bind( _memoRemoteByInstanceId, this ), [] ) :
 			// Ok so we don't have instanceId(s), let's try target(s)
 			options.target ?
 				// Ok, so we have a targets array, we need to iterate over it and get a list of the proxy/client instances
-				_.reduce( _.isArray( options.target ) ? options.target : [ options.target ], _memoRemoteByTarget, [], this ) :
+				_.reduce( _.isArray( options.target ) ? options.target : [ options.target ], _.bind( _memoRemoteByTarget, this ), [] ) :
 				// aww, heck - we don't have instanceId(s) or target(s), so it's ALL THE REMOTES
 				this.remotes;
 		if ( !options.doNotNotify ) {
-			_.each( clients, _disconnectClient, this );
+			_.forEach( clients, _.bind( _disconnectClient, this ) );
 		}
 		this.remotes = _.without.apply( null, [ this.remotes ].concat( clients ) );
 	},
@@ -143,7 +143,7 @@ const plugin = postal.fedx.transports.xframe = {
 		targets = _.isArray( targets ) ? targets : [ targets ];
 		targets = targets.length ? targets : this.getTargets();
 		callback = callback || NO_OP;
-		_.each( targets, function( def ) {
+		_.forEach( targets, _.bind( function( def ) {
 			if ( def.target ) {
 				def.origin = def.origin || state.config.defaultOriginUrl;
 				let remote = _.find( this.remotes, function( x ) {
@@ -155,7 +155,7 @@ const plugin = postal.fedx.transports.xframe = {
 				}
 				remote.sendPing( callback );
 			}
-		}, this );
+		}, this ) );
 	},
 	addEventListener: env.isWorker ? function() {
 		addEventListener( "message", listener );
