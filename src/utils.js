@@ -33,13 +33,13 @@ export function safeSerialize( envelope ) {
 			safeSerialize( val );
 		}
 		if ( _.isArray( val ) ) {
-			_.each( val, safeSerialize );
+			_.forEach( val, safeSerialize );
 		}
 	}
 	return envelope;
 }
 
-export var entries = function* ( obj ) {
+export var entries = function*( obj ) {
 	if ( [ "object", "function" ].indexOf( typeof obj ) === -1 ) {
 		obj = {};
 	}

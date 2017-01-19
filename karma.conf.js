@@ -13,7 +13,7 @@ module.exports = function( config ) {
 			"karma.globals.js",
 			"node_modules/babel-core/browser-polyfill.js",
 			"node_modules/jquery/dist/jquery.js",
-			"node_modules/lodash/index.js",
+			"node_modules/lodash/lodash.js",
 			"node_modules/expect.js/expect.js",
 			"node_modules/mocha/mocha.js",
 			"node_modules/postal/lib/postal.js",
