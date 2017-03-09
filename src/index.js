@@ -100,18 +100,21 @@ const plugin = postal.fedx.transports.xframe = {
 		}
 	},
 	routeMessage: function( event ) {
-		// source = remote window or worker?
-		const source = event.source || event.currentTarget;
-		const parsed = this.unwrapFromTransport( event.data );
-		if ( parsed.postal ) {
-			var remote = _.find( this.remotes, function( x ) {
-				return x.target === source;
-			} );
-			if ( !remote ) {
-				remote = XFrameClient.getInstance( source, event.origin, parsed.packingSlip.instanceId );
-				this.remotes.push( remote );
+		var hasDomainFilters = !!state.config.allowedOrigins.length;
+		var isOriginAllowed = hasDomainFilters && _.contains( state.config.allowedOrigins, event.origin );
+		if ( isOriginAllowed ) {
+			var parsed = this.unwrapFromTransport( event.data );
+			var source = event.source || event.currentTarget;
+			if ( parsed.postal ) {
+				var remote = _.find( this.remotes, function( x ) {
+					return x.target === source;
+				} );
+				if ( !remote ) {
+					remote = XFrameClient.getInstance( source, event.origin, parsed.packingSlip.instanceId );
+					this.remotes.push( remote );
+				}
+				remote.onMessage( parsed.packingSlip );
 			}
-			remote.onMessage( parsed.packingSlip );
 		}
 	},
 	sendMessage: function( env ) {
