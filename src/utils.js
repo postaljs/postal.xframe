@@ -39,7 +39,7 @@ export function safeSerialize( envelope ) {
 	return envelope;
 }
 
-export var entries = function* ( obj ) {
+export var entries = function*( obj ) {
 	if ( [ "object", "function" ].indexOf( typeof obj ) === -1 ) {
 		obj = {};
 	}
