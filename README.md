@@ -1,6 +1,8 @@
 # postal.xframe
 
-## Version 0.5.0 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
+> **This project is no longer being maintained.** Watch the [postal.js](https://github.com/postaljs/postal.js) repo for the release of v3, which will provide cross-frame communications using modern browser APIs.
+
+## Version 0.6.0 (Dual Licensed [MIT](http://www.opensource.org/licenses/mit-license) & [GPL](http://www.opensource.org/licenses/gpl-license))
 
 *(special thanks to @rbtbar for the IE 10/11 fixes where iframes aren't reporting a host or protocol)*
 
